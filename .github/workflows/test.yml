@@ -1,0 +1,45 @@
+name: astral-uv-python-package-template/test
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+      - release
+      - latest
+
+    paths-ignore:
+      - "__pycache__"
+      - ".pytest_cache"
+      - ".ruff_cache"
+      - 'docs/**'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout 🛎
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Synchronise uv environment
+        run: |
+          uv sync --all-extras --dev
+
+      - name: Test w/pytest
+        run: |
+          uv run --link-mode=copy pytest test
+          

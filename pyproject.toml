@@ -1,0 +1,27 @@
+[project]
+name = "astral-uv-python-package-template"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [{ name = "michealroberts", email = "michael@observerly.com" }]
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "astropy>=7.0.1",
+    "mypy>=1.15.0",
+    "pre-commit>=4.1.0",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.3",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.9.7",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src"]
+asyncio_default_fixture_loop_scope = ["session"]
