@@ -1,5 +1,5 @@
 [project]
-name = "astral-uv-python-package-template"
+name = "samps"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -24,4 +24,4 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]
-asyncio_default_fixture_loop_scope = ["session"]
+asyncio_default_fixture_loop_scope = "session"
