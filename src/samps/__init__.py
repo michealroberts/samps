@@ -5,6 +5,7 @@
 
 # **************************************************************************************
 
+from .baudrate import BAUDRATES
 from .errors import SerialReadError, SerialWriteError
 
 # **************************************************************************************
@@ -18,6 +19,9 @@ __license__ = "MIT"
 # **************************************************************************************
 
 __all__: list[str] = [
+    "__version__",
+    "__license__",
+    "BAUDRATES",
     "SerialReadError",
     "SerialWriteError",
 ]
