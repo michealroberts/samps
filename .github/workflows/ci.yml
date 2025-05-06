@@ -1,4 +1,4 @@
-name: astral-uv-python-package-template/ci
+name: samps/ci
 
 on:
   push:
@@ -15,7 +15,7 @@ on:
       - "__pycache__"
       - ".pytest_cache"
       - ".ruff_cache"
-      - 'docs/**'
+      - "docs/**"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -49,9 +49,8 @@ jobs:
 
       - name: Static Analysis w/mypy
         run: |
-          uv run mypy ./src/astral_uv_python_package_template --config mypy.ini
+          uv run mypy ./src/samps --config mypy.ini
 
       - name: Build w/Hatch Build Backend 🔧
         run: |
           uv build
-          
