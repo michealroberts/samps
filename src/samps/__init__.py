@@ -6,7 +6,11 @@
 # **************************************************************************************
 
 from .baudrate import BAUDRATES, BaudrateType
-from .errors import SerialReadError, SerialWriteError
+from .errors import (
+    SerialReadError,
+    SerialTimeoutError,
+    SerialWriteError,
+)
 
 # **************************************************************************************
 
@@ -24,6 +28,7 @@ __all__: list[str] = [
     "BAUDRATES",
     "BaudrateType",
     "SerialReadError",
+    "SerialTimeoutError",
     "SerialWriteError",
 ]
 
