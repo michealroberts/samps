@@ -18,6 +18,18 @@ class SerialReadError(Exception):
 # **************************************************************************************
 
 
+class SerialTimeoutError(Exception):
+    """
+    Exception class for serial timeout errors.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+# **************************************************************************************
+
+
 class SerialWriteError(Exception):
     """
     Exception class for serial write errors.
