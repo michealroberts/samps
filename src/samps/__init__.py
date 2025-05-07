@@ -5,7 +5,7 @@
 
 # **************************************************************************************
 
-from .baudrate import BAUDRATES, BaudrateType
+from .baudrate import BAUDRATE_LOOKUP_FLAGS, BAUDRATES, BaudrateType
 from .errors import (
     SerialReadError,
     SerialTimeoutError,
@@ -25,6 +25,7 @@ __license__ = "MIT"
 __all__: list[str] = [
     "__version__",
     "__license__",
+    "BAUDRATE_LOOKUP_FLAGS",
     "BAUDRATES",
     "BaudrateType",
     "SerialReadError",
