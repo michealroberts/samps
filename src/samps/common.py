@@ -170,6 +170,18 @@ class SerialCommonInterface:
         baudrate: BaudrateType = 9600,
         params: SerialCommonInterfaceParameters = default_serial_parameters,
     ) -> None:
+        """
+        Initialize the serial interface.
+
+        Args:
+            port: The device path for the serial port (e.g., "/dev/ttyUSB0").
+            baudrate: The baud rate for communication (must be in BAUDRATES).
+            params: A dict of serial parameters including bytesize, parity,
+                    stopbits, timeout, xonxoff, and rtscts.
+
+        Raises:
+            ValueError: If timeout is negative or baudrate is invalid.
+        """
         self._port = port
         self._bytesize = params.get("bytesize", 8)
         self._parity = params.get("parity", "N")
@@ -199,7 +211,13 @@ class SerialCommonInterface:
 
     def _get_termios_attributes(self) -> TTYAttributes:
         """
-        Get the current TTY attributes for the serial port.
+        Retrieve the current TTY attributes for the open serial port.
+
+        Returns:
+            A TTYAttributes dict representing current termios settings.
+
+        Raises:
+            RuntimeError: If the file descriptor is not available.
         """
         if not self._fd:
             raise RuntimeError("File descriptor is not available.")
@@ -222,8 +240,14 @@ class SerialCommonInterface:
 
     def _configure_tty_settings(self, attributes: TTYAttributes) -> None:
         """
-        Configure the serial port with the specified parameters.
-        This method is a placeholder and should be implemented in subclasses.
+        Apply configured TTY attributes to the serial port.
+
+        Args:
+            attributes: The TTYAttributes dict to set on the port.
+
+        Raises:
+            RuntimeError: If the file descriptor is not available.
+            ValueError: If bytesize, stopbits, or parity parameters are invalid.
         """
         if not self._fd:
             raise RuntimeError("File descriptor is not available.")
@@ -324,7 +348,12 @@ class SerialCommonInterface:
         )
 
     def open(self) -> None:
-        """"""
+        """
+        Open the serial port, configure termios settings, and enable blocking reads.
+
+        Raises:
+            SerialReadError: If opening the port fails.
+        """
         # Specify the flags for opening the serial port, e.g., in read/write mode,
         # without controlling terminal, and in non-blocking mode:
         flags = os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK
@@ -350,7 +379,9 @@ class SerialCommonInterface:
         self._is_open = True
 
     def close(self) -> None:
-        """"""
+        """
+        Close the serial port if it is open.
+        """
         if self._fd is None:
             return
 
@@ -359,7 +390,19 @@ class SerialCommonInterface:
         self._is_open = False
 
     def read(self, size: int = 1) -> bytes:
-        """ """
+        """
+        Read up to `size` bytes from the serial port, respecting the configured timeout.
+
+        Args:
+            size: Number of bytes to read (default: 1).
+
+        Returns:
+            A bytes object containing the data read.
+
+        Raises:
+            RuntimeError: If the port is not open.
+            SerialReadError: On timeout or read errors.
+        """
         # Check if the file descriptor is a valid integer:
         if not self.is_open():
             raise RuntimeError(
@@ -412,9 +455,17 @@ class SerialCommonInterface:
 
     def write(self, data: bytes) -> int:
         """
-        Write all of `data` to the serial port, retrying on EINTR/EAGAIN/EWOULDBLOCK
-        and raising SerialReadError on fatal errors or if zero bytes are written.
-        Returns the total number of bytes written.
+        Write all of `data` to the serial port, retrying on transient errors.
+
+        Args:
+            data: Bytes to write.
+
+        Returns:
+            The total number of bytes successfully written.
+
+        Raises:
+            RuntimeError: If the port is not open.
+            SerialWriteError: On write failure.
         """
         if not self.is_open():
             raise RuntimeError(
@@ -447,6 +498,12 @@ class SerialCommonInterface:
         return written
 
     def flush(self) -> None:
+        """
+        Block until all written output has been transmitted to the serial device.
+
+        Raises:
+            RuntimeError: If the port is not open.
+        """
         # Check if the file descriptor is a valid integer:
         if not self.is_open():
             raise RuntimeError(
@@ -458,32 +515,44 @@ class SerialCommonInterface:
             raise RuntimeError("File descriptor is not available.")
 
         # Wait until all output written to file descriptor fd has been
-        # transmitted and drain:
+        # transmitted and drained:
         tcdrain(self._fd)
 
     def is_open(self) -> bool:
         """
-        Check if the serial port is open, e.g., the file descriptor is available.
+        Check whether the serial port is currently open.
 
         Returns:
-            bool: True if the serial port is open, False otherwise.
+            True if open, False otherwise.
         """
         return self._fd is not None and self._is_open
 
     def is_closed(self) -> bool:
         """
-        Check if the serial port is closed, e.g., the file descriptor is not available.
+        Check whether the serial port is currently closed.
 
         Returns:
-            bool: True if the serial port is closed, False otherwise.
+            True if closed, False otherwise.
         """
         return not self.is_open()
 
     @property
     def port(self) -> str:
+        """
+        Get the current serial port device path.
+
+        Returns:
+            The device path as a string.
+        """
         return self._port
 
     def set_port(self, port: str) -> None:
+        """
+        Change the serial device path and reconfigure termios settings.
+
+        Args:
+            port: New device path (e.g., "/dev/ttyUSB1").
+        """
         self._port = port
 
         # Get the raw TTY termios attributes for the file descriptor:
@@ -494,9 +563,21 @@ class SerialCommonInterface:
 
     @property
     def baudrate(self) -> int:
+        """
+        Get the current baud rate setting.
+
+        Returns:
+            The baud rate as an integer.
+        """
         return self._baudrate
 
     def set_baudrate(self, baudrate: BaudrateType) -> None:
+        """
+        Change the baud rate and reconfigure termios settings.
+
+        Args:
+            baudrate: New baud rate (must be in BAUDRATES).
+        """
         self._baudrate = baudrate
 
         # Get the raw TTY termios attributes for the file descriptor:
@@ -507,9 +588,21 @@ class SerialCommonInterface:
 
     @property
     def bytesize(self) -> int:
+        """
+        Get the current byte size (number of data bits).
+
+        Returns:
+            An integer (5, 6, 7, or 8).
+        """
         return self._bytesize
 
     def set_bytesize(self, bytesize: Literal[8, 7, 6, 5] = 8) -> None:
+        """
+        Change the data bit size and reconfigure termios settings.
+
+        Args:
+            bytesize: Number of data bits (5, 6, 7, or 8).
+        """
         self._bytesize = bytesize
 
         # Get the raw TTY termios attributes for the file descriptor:
@@ -520,9 +613,21 @@ class SerialCommonInterface:
 
     @property
     def parity(self) -> str:
+        """
+        Get the current parity setting ('N', 'E', or 'O').
+
+        Returns:
+            A single-character string.
+        """
         return self._parity
 
     def set_parity(self, parity: str) -> None:
+        """
+        Change the parity mode and reconfigure termios settings.
+
+        Args:
+            parity: Parity mode ('N' for none, 'E' for even, 'O' for odd).
+        """
         self._parity = parity
 
         # Get the raw TTY termios attributes for the file descriptor:
@@ -533,7 +638,10 @@ class SerialCommonInterface:
 
     def __enter__(self) -> "SerialCommonInterface":
         """
-        Enter the runtime context and open the Serial port.
+        Context manager entry: opens the serial port.
+
+        Returns:
+            The SerialCommonInterface instance.
         """
         self.open()
         return self
@@ -545,13 +653,16 @@ class SerialCommonInterface:
         exc_tb: Optional[TracebackType],
     ) -> None:
         """
-        Exit the runtime context and close the Serial port.
+        Context manager exit: closes the serial port.
         """
         self.close()
 
     def __repr__(self) -> str:
         """
-        Return a string representation of the SerialCommonInterface object.
+        Return a string representation of the interface.
+
+        Returns:
+            A string in the form: SerialCommonInterface(port=<port>, baudrate=<baudrate>).
         """
         return f"SerialCommonInterface(port={self._port}, baudrate={self._baudrate})"
 
