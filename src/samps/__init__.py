@@ -6,6 +6,7 @@
 # **************************************************************************************
 
 from .baudrate import BAUDRATE_LOOKUP_FLAGS, BAUDRATES, BaudrateType
+from .common import SerialCommonInterface, SerialCommonInterfaceParameters
 from .errors import (
     SerialReadError,
     SerialTimeoutError,
@@ -28,6 +29,8 @@ __all__: list[str] = [
     "BAUDRATE_LOOKUP_FLAGS",
     "BAUDRATES",
     "BaudrateType",
+    "SerialCommonInterface",
+    "SerialCommonInterfaceParameters",
     "SerialReadError",
     "SerialTimeoutError",
     "SerialWriteError",
