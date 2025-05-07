@@ -461,6 +461,81 @@ class SerialCommonInterface:
         # Finally, return the accumulated data:
         return bytes(read)
 
+    def readline(self, eol: bytes = b"\n", maximum_bytes: int = -1) -> bytes:
+        """
+        Read up to and including the next `eol` byte (default b'\n'),
+        or until `maximum_bytes` bytes have been read (if > 0),
+        honoring self._timeout for the entire line.
+        """
+        # Check if the file descriptor is a valid integer:
+        if not self.is_open():
+            raise RuntimeError(
+                "Port must be configured and open before it can be used."
+            )
+
+        # This is needed for type narrowing the file descriptor:
+        if self._fd is None:
+            raise RuntimeError("File descriptor is not available.")
+
+        # Initialize a bytearray to accumulate incoming data:
+        read: bytearray = bytearray()
+
+        # Convert timeout from seconds to milliseconds, as required by ReadTimeoutHandler:
+        timer = ReadTimeoutHandler(timeout=self._timeout * 1000)
+
+        timer.start()
+
+        # Determine how many bytes to read in this chunk:
+        chunk_size = 1024
+
+        # Continue reading until we have collected the requested number of bytes
+        # or until the overall timeout period has elapsed:
+        while True:
+            # Check if we have read enough bytes to satisfy max_bytes:
+            if maximum_bytes > 0 and len(read) >= maximum_bytes:
+                break
+
+            # Check if the timeout has expired:
+            if timer.has_expired():
+                raise SerialReadError(
+                    f"Read timeout after {self._timeout}s, got {len(read)} bytes"
+                )
+
+            if maximum_bytes > 0:
+                chunk_size = min(chunk_size, maximum_bytes - len(read))
+
+            try:
+                chunk: bytes = os.read(self._fd, chunk_size)
+            except OSError as e:
+                # Retry on non-fatal errors and propagate others upwards:
+                if e.errno in (
+                    EAGAIN,
+                    EWOULDBLOCK,
+                    EINTR,
+                ):
+                    continue
+                raise SerialReadError(f"Reading from serial port failed: {e}")
+
+            # If the port was ready but returned no data, treat it as a disconnection.
+            if not chunk:
+                raise SerialReadError(
+                    "The device reported readiness to read but returned no data."
+                )
+
+            # If the chunk read was successful, process it by checking if the end-of-line
+            # marker is within this chunk
+            if eol in chunk:
+                # Find the index position of the marker and append up to and including it:
+                index = chunk.index(eol) + len(eol)
+                read.extend(chunk[:index])
+                break
+
+            # Otherwise, append the entire chunk
+            read.extend(chunk)
+
+        # Finally, return the accumulated data:
+        return bytes(read)
+
     def write(self, data: bytes) -> int:
         """
         Write all of `data` to the serial port, retrying on transient errors.
