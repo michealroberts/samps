@@ -56,6 +56,12 @@ from .handlers import ReadTimeoutHandler
 
 # **************************************************************************************
 
+# Default to a timeout of 2.0 seconds for serial communication, this can be
+# overridden in the SerialCommonInterfaceParameters:
+DEFAULT_TIMEOUT = 2.0
+
+# **************************************************************************************
+
 
 class TTYAttributes(TypedDict):
     """
@@ -101,7 +107,7 @@ class SerialCommonInterfaceParameters(TypedDict):
     # The stopbits for the serial connection:
     stopbits: Literal[1, 2]
 
-    # The timeout for the serial connection:
+    # The timeout for the serial connection (in seconds):
     timeout: Optional[float]
 
     # XON/XOFF flow control:
@@ -119,7 +125,7 @@ default_serial_parameters: SerialCommonInterfaceParameters = (
             "bytesize": 8,
             "parity": "N",
             "stopbits": 1,
-            "timeout": None,
+            "timeout": DEFAULT_TIMEOUT,
             "xonxoff": False,
             "rtscts": False,
         }
@@ -149,8 +155,9 @@ class SerialCommonInterface:
     # The default stopbits for the serial connection is set to 1:
     _stopbits: int = 1
 
-    # The default timeout for the serial connection is set to None (blocking mode):
-    _timeout: float = 0.0
+    # The default timeout for the serial connection is set to 2.0 seconds, as defined by
+    # DEFAULT_TIMEOUT (blocking mode, in seconds):
+    _timeout: float = DEFAULT_TIMEOUT
 
     # The default xonxoff flow control for the serial connection is set to False:
     _xonxoff: bool = False
@@ -194,7 +201,7 @@ class SerialCommonInterface:
             raise ValueError("Timeout must be greater than or equal to 0")
 
         # Initialize the timeout handler with the provided timeout value:
-        self._timeout = timeout or 0.0
+        self._timeout = DEFAULT_TIMEOUT if timeout is None else timeout
 
         # Ensure that the baudrate provided is valid:
         if baudrate not in BAUDRATE_LOOKUP_FLAGS.keys():
@@ -416,7 +423,8 @@ class SerialCommonInterface:
         # Initialize a bytearray to accumulate incoming data:
         read: bytearray = bytearray()
 
-        timer = ReadTimeoutHandler(timeout=self._timeout or 0.0)
+        # Convert timeout from seconds to milliseconds, as required by ReadTimeoutHandler:
+        timer = ReadTimeoutHandler(timeout=self._timeout * 1000)
 
         timer.start()
 
