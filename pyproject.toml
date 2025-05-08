@@ -1,9 +1,26 @@
 [project]
 name = "samps"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "A hypermodern, type-safe, zero-dependency python library for serial port I/O access"
 authors = [{ name = "michealroberts", email = "michael@observerly.com" }]
+keywords = [
+    "serial",
+    "uart",
+    "baudrate",
+    "io",
+    "tty",
+    "usb",
+    "rs-232",
+    "rs-485",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.13",
+]
+readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.13"
 dependencies = []
 
@@ -13,13 +30,12 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "astropy>=7.0.1",
     "mypy>=1.15.0",
     "pre-commit>=4.1.0",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.3",
     "pytest-cov>=6.0.0",
-    "ruff>=0.9.7",
+    "ruff>=0.11.8",
 ]
 
 [tool.pytest.ini_options]
