@@ -1,52 +1,97 @@
----
 name: "Bug"
-about: "Report a reproducible issue or bug"
-title: "[BUG]: "
-labels: ["bug", "triage"]
-assignees: []
----
+description: "Report a reproducible issue or bug"
+title: "[BUG]:"
+labels:
+  - "bug"
+  - "triage"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please ensure you have searched for existing issues before submitting a new one.
 
-# Please ensure you have searched for existing issues before submitting a new one.
+        If you have a question or need help, please use the Discussions forum instead:
 
-# If you have a question or need help, please use the Discussions forum instead:
+        https://github.com/michealroberts/samps/discussions
 
-https://github.com/michealroberts/samps/discussions
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Provide a brief, one-sentence description of the bug.
+      placeholder: Summary
+    validations:
+      required: true
 
-# Summary:
-Provide a brief, one-sentence description of the bug.
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Explain how this bug affects your work or blocks your progress.
+      placeholder: Impact
+    validations:
+      required: true
 
-# Impact:
-Explain how this bug affects your work or blocks your progress.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: |
+        Include a minimal, reproducible example or detailed steps to reproduce.
+        If possible, link to a GitHub repo or gist.
+      placeholder: Reproduction Steps
+    validations:
+      required: true
 
-# Reproduction Steps:
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: Describe what you expected to happen.
+      placeholder: Expected Behavior
+    validations:
+      required: true
 
-Please include a minimal, reproducible example or the steps to reproduce. 
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: Describe what actually happened, including error messages or incorrect output.
+      placeholder: Actual Behavior
+    validations:
+      required: true
 
-If possible, provide a link to a GitHub repository or gist that demonstrates the issue.
+  - type: textarea
+    id: regression_range
+    attributes:
+      label: Regression Range
+      description: When did this stop working? (e.g. prior version)
+      placeholder: Regression Range
 
-# Expected Behavior:
+  - type: textarea
+    id: logs_screenshots
+    attributes:
+      label: Logs & Screenshots
+      description: Attach logs, stack traces, or screenshots that help diagnose the issue.
+      placeholder: Logs & Screenshots
 
-Describe what you expected to happen.
+  - type: textarea
+    id: environment_details
+    attributes:
+      label: Environment Details
+      description: |
+        Provide your OS, Python version, samps version, and hardware info.
+        Example:
+          - OS: macOS 13.3
+          - Python: 3.13.x
+          - samps: 0.1.0
+      placeholder: Environment Details
+    validations:
+      required: true
 
-# Actual Behavior:
-
-Describe what actually happened, including any error messages or incorrect output that you received.
-
-# Regression Range:
-
-When did this stop working? (e.g. prior version)
-
-# Logs & Screenshots:
-
-Attach any logs, stack traces, or screenshots that you think might help diagnose the issue.
-
-# Environment Details:
-
-- **OS** (e.g. macOS 13.3, Ubuntu 22.04)
-- **Python** (e.g. 3.13.*)
-- **samps** (e.g. 0.1.0)
-- **Hardware** (if relevant)
-
-# Additional Context:
-
-Any other information or context that might be helpful for diagnosing the issue.
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Any other information or context that might be helpful.
+      placeholder: Additional Context
