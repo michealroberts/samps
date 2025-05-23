@@ -1,0 +1,31 @@
+---
+name: "Feature Request"
+about: "Suggest a new feature or enhancement"
+title: "[FEATURE]: "
+labels: ["feature", "enhancement", "triage"]
+assignees: []
+---
+
+# Please ensure you have searched for existing feature requests before submitting a new one.
+
+# If you have a question or need help, please use the Discussions forum instead:
+
+https://github.com/michealroberts/samps/discussions
+
+# Summary:
+Provide a brief, one-sentence description of the feature you are requesting.
+
+# Impact:
+Explain how this feature would improve your workflow or solve a problem.
+
+# Proposal:
+Outline the design or API changes you envision. Please include code examples for the API or pseudo-code.
+
+# Alternatives Considered:
+List other designs or workarounds you evaluated and why they were rejected.
+
+# Drawbacks:
+Discuss any potential downsides, increased complexity, or compatibility concerns.
+
+# References:
+Link to any related issues, RFCs, documentation, or external resources that support your proposal.
