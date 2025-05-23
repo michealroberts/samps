@@ -1,31 +1,64 @@
----
 name: "Feature Request"
-about: "Suggest a new feature or enhancement"
-title: "[FEATURE]: "
-labels: ["feature", "enhancement", "triage"]
-assignees: []
----
+description: "Suggest a new feature or enhancement"
+title: "[FEATURE]:"
+labels:
+  - "feature"
+  - "enhancement"
+  - "triage"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please ensure you have searched for existing feature requests before submitting a new one.
 
-# Please ensure you have searched for existing feature requests before submitting a new one.
+        If you have a question or need help, please use the Discussions forum instead:
 
-# If you have a question or need help, please use the Discussions forum instead:
+        https://github.com/michealroberts/samps/discussions
 
-https://github.com/michealroberts/samps/discussions
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Provide a brief, one-sentence description of the feature you are requesting.
+      placeholder: Summary
+    validations:
+      required: true
 
-# Summary:
-Provide a brief, one-sentence description of the feature you are requesting.
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Explain how this feature would improve your workflow or solve a problem.
+      placeholder: Impact
+    validations:
+      required: true
 
-# Impact:
-Explain how this feature would improve your workflow or solve a problem.
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Outline the design or API changes you envision. Please include code examples or pseudo-code.
+      placeholder: Proposal
+    validations:
+      required: true
 
-# Proposal:
-Outline the design or API changes you envision. Please include code examples for the API or pseudo-code.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: List other designs or workarounds you evaluated and why they were rejected.
+      placeholder: Alternatives Considered
 
-# Alternatives Considered:
-List other designs or workarounds you evaluated and why they were rejected.
+  - type: textarea
+    id: drawbacks
+    attributes:
+      label: Drawbacks
+      description: Discuss any potential downsides, increased complexity, or compatibility concerns.
+      placeholder: Drawbacks
 
-# Drawbacks:
-Discuss any potential downsides, increased complexity, or compatibility concerns.
-
-# References:
-Link to any related issues, RFCs, documentation, or external resources that support your proposal.
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Link to any related issues, RFCs, documentation, or external resources that support your proposal.
+      placeholder: References
