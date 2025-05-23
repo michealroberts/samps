@@ -1,0 +1,52 @@
+---
+name: "Bug"
+about: "Report a reproducible issue or bug"
+title: "[BUG]: "
+labels: ["bug", "triage"]
+assignees: []
+---
+
+# Please ensure you have searched for existing issues before submitting a new one.
+
+# If you have a question or need help, please use the Discussions forum instead:
+
+https://github.com/michealroberts/samps/discussions
+
+# Summary:
+Provide a brief, one-sentence description of the bug.
+
+# Impact:
+Explain how this bug affects your work or blocks your progress.
+
+# Reproduction Steps:
+
+Please include a minimal, reproducible example or the steps to reproduce. 
+
+If possible, provide a link to a GitHub repository or gist that demonstrates the issue.
+
+# Expected Behavior:
+
+Describe what you expected to happen.
+
+# Actual Behavior:
+
+Describe what actually happened, including any error messages or incorrect output that you received.
+
+# Regression Range:
+
+When did this stop working? (e.g. prior version)
+
+# Logs & Screenshots:
+
+Attach any logs, stack traces, or screenshots that you think might help diagnose the issue.
+
+# Environment Details:
+
+- **OS** (e.g. macOS 13.3, Ubuntu 22.04)
+- **Python** (e.g. 3.13.*)
+- **samps** (e.g. 0.1.0)
+- **Hardware** (if relevant)
+
+# Additional Context:
+
+Any other information or context that might be helpful for diagnosing the issue.

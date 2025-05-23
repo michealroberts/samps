@@ -1,0 +1,17 @@
+---
+name: "General Q&A"
+about: "Redirect usage questions and discussions to GitHub Discussions"
+title: "[QUESTION]: "
+labels: ["question"]
+assignees: []
+---
+
+For usage questions, troubleshooting, or general discussion, please head over to our Discussions forum:
+
+https://github.com/michealroberts/samps/discussions
+
+- Browse existing topics
+- Ask setup or usage questions
+- Vote and comment on proposals
+
+Thank you for keeping issues focused on actionable bugs and enhancements!
