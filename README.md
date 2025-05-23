@@ -73,6 +73,10 @@ print(["Serial Port Closed"])
 - [ ] Implement SerialOverTCP (e.g., telnet RFC 2217)
 - [ ] Documentation
 
+## Contributing
+
+Contributions are welcome! Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for details on how to contribute to this project.
+
 ### License
 
 This project is licensed under the terms of the MIT license.
