@@ -1,6 +1,6 @@
 # samps
 
-A hypermodern, type-safe, zero-dependency python library for serial port I/O access.
+A hypermodern, type-safe, zero-dependency Python library for serial port I/O access.
 
 ## Installation
 
