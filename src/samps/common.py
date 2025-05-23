@@ -8,6 +8,7 @@
 import os
 import termios
 from errno import EAGAIN, EINTR, EWOULDBLOCK
+from os import name
 from termios import (
     B9600,
     CLOCAL,
@@ -189,6 +190,12 @@ class SerialCommonInterface:
         Raises:
             ValueError: If timeout is negative or baudrate is invalid.
         """
+        if name == "nt":
+            raise ImportError(
+                "The samps package is not supported on Windows yet. "
+                "Please use a different operating system."
+            )
+
         self._port = port
         self._bytesize = params.get("bytesize", 8)
         self._parity = params.get("parity", "N")
