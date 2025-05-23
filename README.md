@@ -1,2 +1,80 @@
 # samps
-A hypermodern python package starter template with astral uv ruff and mypy
+
+A hypermodern, type-safe, zero-dependency python library for serial port I/O access.
+
+## Installation
+
+```bash
+pip install samps
+```
+
+or
+
+using your preferred environment / package manager of choice, e.g., `poetry`, `conda` or `uv`:
+
+```bash
+poetry add samps
+```
+
+```bash
+conda install samps
+```
+
+```bash
+uv add samps
+```
+
+## Usage
+
+The general usage of this library is to create a serial connection to the device you want to communicate with.
+
+You'll need to know the serial port name and the baudrate of the device you want to communicate with, this is usually found in the device's documentation.
+
+Once you have the serial port name and baudrate, you can create a `SerialCommonInterface` object and use it to communicate with the device as follows:
+
+```python
+from samps import SerialCommonInterface as Serial
+
+serial = Serial(port="/dev/tty.usbserial-0001", baudrate=9600)
+
+serial.open()
+
+print(["Serial Port Is Open?", "Yes" if serial.is_open() else "No"])
+
+line = serial.readline()
+
+print(line.decode("utf-8").strip())
+
+serial.close()
+
+print(["Serial Port Closed"])
+```
+
+or, using a context manager:
+
+```python
+from samps import SerialCommonInterface as Serial
+
+with Serial(port="/dev/tty.usbserial-0001", baudrate=9600) as serial:
+    print(["Serial Port Is Open?", "Yes" if serial.is_open() else "No"])
+
+    line = serial.readline()
+
+    print(line.decode("utf-8").strip())
+
+print(["Serial Port Closed"])
+```
+
+## Milestones
+
+- [x] Implement SerialCommonInterface for POSIX systems
+- [ ] Implement SerialCommonInterface for Windows systems
+- [x] Implement SerialCommonInterface for MacOS systems
+- [ ] Implement SerialOverTCP (e.g., telnet RFC 2217)
+- [ ] Documentation
+
+### License
+
+This project is licensed under the terms of the MIT license.
+
+
