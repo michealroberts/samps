@@ -119,6 +119,18 @@ class SerialCommonInterfaceParameters(TypedDict):
 
 # **************************************************************************************
 
+
+class SerialInitialisationParameters(TypedDict):
+    # The device port to connect to (e.g. '/dev/ttyUSB0'):
+    port: str
+    # The baud rate for the serial connection (in symbols per second):
+    baudrate: BaudrateType
+    # The timeout for the serial connection (in seconds) or None for blocking mode:
+    timeout: Optional[float]
+
+
+# **************************************************************************************
+
 default_serial_parameters: SerialCommonInterfaceParameters = (
     SerialCommonInterfaceParameters(
         {

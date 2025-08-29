@@ -18,7 +18,11 @@ if name == "nt":
 
 from .asynchronous import SerialAsyncCommonInterface
 from .baudrate import BAUDRATE_LOOKUP_FLAGS, BAUDRATES, BaudrateType
-from .common import SerialCommonInterface, SerialCommonInterfaceParameters
+from .common import (
+    SerialCommonInterface,
+    SerialCommonInterfaceParameters,
+    SerialInitialisationParameters,
+)
 from .errors import (
     SerialReadError,
     SerialTimeoutError,
@@ -49,6 +53,7 @@ __all__: list[str] = [
     "SerialAsyncCommonInterface",
     "SerialCommonInterface",
     "SerialCommonInterfaceParameters",
+    "SerialInitialisationParameters",
     "SerialReadError",
     "SerialTimeoutError",
     "SerialWriteError",
