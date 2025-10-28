@@ -43,3 +43,36 @@ def int_to_hex(value: int) -> Tuple[int, int, int]:
 
 
 # **************************************************************************************
+
+
+def hex_to_int(value: Tuple[int, int, int]) -> int:
+    """
+    Convert a fixed-length big endian tuple of bytes to an integer (0..0xFFFFFF).
+
+    Args:
+        value: A tuple of three integers, each in [0, 255].
+
+    Returns:
+        Integer in [0, 16777215].
+
+    Raises:
+        TypeError: If value is not a 3-tuple of ints.
+        ValueError: If any byte is out of range.
+    """
+    # Validate the input type:
+    if not (
+        isinstance(value, tuple)
+        and len(value) == 3
+        and all(isinstance(b, int) for b in value)
+    ):
+        raise TypeError("value must be a tuple of three integers")
+
+    # Validate each byte's range:
+    for b in value:
+        if not (0 <= b <= 0xFF):
+            raise ValueError("each byte must be in the range 0..255")
+
+    return (value[0] << 16) | (value[1] << 8) | value[2]
+
+
+# **************************************************************************************

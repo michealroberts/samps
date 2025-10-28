@@ -28,7 +28,7 @@ from .errors import (
     SerialTimeoutError,
     SerialWriteError,
 )
-from .utilities import int_to_hex
+from .utilities import hex_to_int, int_to_hex
 
 # If the operating system is POSIX compliant, import the Serial class from the common module:
 if name == "posix":
@@ -58,6 +58,7 @@ __all__: list[str] = [
     "SerialReadError",
     "SerialTimeoutError",
     "SerialWriteError",
+    "hex_to_int",
     "int_to_hex",
 ]
 
