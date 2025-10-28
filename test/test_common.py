@@ -115,6 +115,20 @@ class TestSerialCommonInterface(unittest.TestCase):
         read_back = self.serial.read(len(data))
         self.assertEqual(read_back, data)
 
+    def test_ask_through_pty(self) -> None:
+        """
+        Test the ask method for write followed by read:
+        """
+        query = b"hello-world\n"
+        reply = b"echo: hello-world\n"
+
+        os.write(self.master_file_descriptor, reply)
+
+        response = self.serial.ask(query)
+        self.assertEqual(response, reply)
+        written_back = os.read(self.master_file_descriptor, len(query))
+        self.assertEqual(written_back, query)
+
     def test_read_zero_length(self) -> None:
         """
         Test that reading zero bytes returns an empty bytes object:
