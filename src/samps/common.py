@@ -592,6 +592,21 @@ class SerialCommonInterface:
 
         return written
 
+    def ask(self, data: bytes, eol: bytes = b"\n", maximum_bytes: int = -1) -> bytes:
+        """
+        Ask the device by writing `data` and reading a response line ending with `eol`.
+
+        Args:
+            data: Bytes to write as the query.
+            eol: End-of-line marker for the response (default: b'\n').
+            maximum_bytes: Maximum bytes to read in response (-1 for no limit).
+
+        Returns:
+            The response bytes read from the device.
+        """
+        self.write(data)
+        return self.readline(eol, maximum_bytes)
+
     def flush(self) -> None:
         """
         Block until all written output has been transmitted to the serial device.
