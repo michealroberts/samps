@@ -40,3 +40,39 @@ class SerialWriteError(Exception):
 
 
 # **************************************************************************************
+
+
+class XIMCCommandNotRecognisedError(Exception):
+    """
+    Exception class for XIMC command not recognised errors.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+# **************************************************************************************
+
+
+class XIMCInvalidCRCError(Exception):
+    """
+    Exception class for XIMC invalid CRC errors.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+# **************************************************************************************
+
+
+class XIMCValueOutOfRangeError(Exception):
+    """
+    Exception class for XIMC value out of range errors.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+# **************************************************************************************
