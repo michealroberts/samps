@@ -23,6 +23,7 @@ from .common import (
     SerialCommonInterfaceParameters,
     SerialInitialisationParameters,
 )
+from .crc import get_cyclic_redundancy_checksum
 from .errors import (
     SerialReadError,
     SerialTimeoutError,
@@ -58,6 +59,7 @@ __all__: list[str] = [
     "SerialReadError",
     "SerialTimeoutError",
     "SerialWriteError",
+    "get_cyclic_redundancy_checksum",
     "hex_to_int",
     "int_to_hex",
 ]
