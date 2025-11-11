@@ -76,3 +76,15 @@ def hex_to_int(value: Tuple[int, int, int]) -> int:
 
 
 # **************************************************************************************
+
+
+def no_op(*args, **kwargs) -> None:
+    """
+    A no-operation function that does nothing.
+
+    This can be used as a placeholder or default callback.
+    """
+    pass
+
+
+# **************************************************************************************
