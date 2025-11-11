@@ -5,6 +5,7 @@
 
 # **************************************************************************************
 
+from termios import tcgetattr
 from typing import TypedDict
 
 # **************************************************************************************
@@ -35,6 +36,36 @@ class TTYAttributes(TypedDict):
 
     # Control-character array (VMIN, VTIME, and other special chars):
     control_chars: list[int]
+
+
+# **************************************************************************************
+
+
+def get_termios_attributes(fd: int) -> TTYAttributes:
+    """
+    Retrieve the termios attributes for a given file descriptor
+
+    Args:
+        fd: The file descriptor of the TTY device.
+
+    Returns:
+        A TTYAttributes dictionary containing the termios settings.
+    """
+    # Get the current TTY attributes for the file descriptor:
+    attributes = tcgetattr(fd)
+
+    # Convert the attributes to a dictionary format:
+    return TTYAttributes(
+        {
+            "iflag": attributes[0],
+            "oflag": attributes[1],
+            "cflag": attributes[2],
+            "lflag": attributes[3],
+            "ispeed": attributes[4],
+            "ospeed": attributes[5],
+            "control_chars": list(attributes[6]),
+        }
+    )
 
 
 # **************************************************************************************
