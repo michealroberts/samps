@@ -21,7 +21,6 @@ from .baudrate import BAUDRATE_LOOKUP_FLAGS, BAUDRATES, BaudrateType
 from .common import (
     SerialCommonInterface,
     SerialCommonInterfaceParameters,
-    SerialInitialisationParameters,
 )
 from .crc import get_cyclic_redundancy_checksum
 from .errors import (
@@ -55,7 +54,6 @@ __all__: list[str] = [
     "SerialAsyncCommonInterface",
     "SerialCommonInterface",
     "SerialCommonInterfaceParameters",
-    "SerialInitialisationParameters",
     "SerialReadError",
     "SerialTimeoutError",
     "SerialWriteError",
