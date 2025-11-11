@@ -554,7 +554,8 @@ class SerialCommonInterface:
         Returns:
             The response bytes read from the device.
         """
-        self.write(data)
+        to_send = data if data.endswith(eol) else data + eol
+        self.write(to_send)
         return self.readline(eol, maximum_bytes)
 
     def flush(self) -> None:
