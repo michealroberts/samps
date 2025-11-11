@@ -48,4 +48,4 @@ jobs:
 
       - name: Test w/pytest
         run: |
-          uv run --link-mode=copy pytest test
+          uv run --link-mode=copy pytest test --timeout=5
