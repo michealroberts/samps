@@ -44,7 +44,6 @@ from termios import (
     VMIN,
     VTIME,
     tcdrain,
-    tcgetattr,
     tcsetattr,
 )
 from types import TracebackType
@@ -53,42 +52,13 @@ from typing import Literal, Optional, Type, TypedDict
 from .baudrate import BAUDRATE_LOOKUP_FLAGS, BAUDRATES, BaudrateType
 from .errors import SerialReadError, SerialWriteError
 from .handlers import ReadTimeoutHandler
+from .tty import TTYAttributes, get_termios_attributes
 
 # **************************************************************************************
 
 # Default to a timeout of 2.0 seconds for serial communication, this can be
 # overridden in the SerialCommonInterfaceParameters:
 DEFAULT_TIMEOUT = 2.0
-
-# **************************************************************************************
-
-
-class TTYAttributes(TypedDict):
-    """
-    A representation of the attributes of a TTY device.
-    """
-
-    # Input flags controlling how incoming bytes are interpreted:
-    iflag: int
-
-    # Output flags controlling how bytes are transmitted:
-    oflag: int
-
-    # Control flags for baud rate, character size, parity, stop bits, etc.:
-    cflag: int
-
-    # Local flags for canonical mode, echo, signal handling, and extensions:
-    lflag: int
-
-    # Input baud rate constant (e.g. termios.B9600):
-    ispeed: int
-
-    # Output baud rate constant (e.g. termios.B9600):
-    ospeed: int
-
-    # Control-character array (VMIN, VTIME, and other special chars):
-    control_chars: list[int]
-
 
 # **************************************************************************************
 
@@ -242,20 +212,7 @@ class SerialCommonInterface:
             raise RuntimeError("File descriptor is not available.")
 
         # Get the current TTY attributes for the file descriptor:
-        attributes = tcgetattr(self._fd)
-
-        # Convert the attributes to a dictionary format:
-        return TTYAttributes(
-            {
-                "iflag": attributes[0],
-                "oflag": attributes[1],
-                "cflag": attributes[2],
-                "lflag": attributes[3],
-                "ispeed": attributes[4],
-                "ospeed": attributes[5],
-                "control_chars": list(attributes[6]),
-            }
-        )
+        return get_termios_attributes(self._fd)
 
     def _configure_tty_settings(self, attributes: TTYAttributes) -> None:
         """
