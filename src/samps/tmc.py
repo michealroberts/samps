@@ -127,6 +127,10 @@ class USBTMCCommonInterface:
         if not self._fd:
             raise RuntimeError("File descriptor is not available.")
 
+        # Only configure TTY settings if the file descriptor is a TTY:
+        if not os.isatty(self._fd):
+            raise RuntimeError("File descriptor is not a TTY device.")
+
         # Get the current TTY attributes for the file descriptor:
         return get_termios_attributes(self._fd)
 
@@ -147,6 +151,8 @@ class USBTMCCommonInterface:
         # Only configure TTY settings if the file descriptor is a TTY:
         if not os.isatty(self._fd):
             return
+
+        attributes = self._get_termios_attributes()
 
         # Enable local mode and receiver:
         attributes["cflag"] |= CLOCAL | CREAD
@@ -507,7 +513,7 @@ class USBTMCCommonInterface:
         is_atty = os.isatty(self._fd)
 
         try:
-            ioctl(self._fd, USBTMC_IOCTL_CLEAR) if not is_atty else no_op()
+            ioctl(self._fd, USBTMC_IOCTL_ABORT_BULK_OUT) if not is_atty else no_op()
         except OSError as e:
             if e.errno in (ENOTTY, EINVAL):
                 raise RuntimeError(
