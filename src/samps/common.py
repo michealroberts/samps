@@ -554,7 +554,12 @@ class SerialCommonInterface:
         Returns:
             The response bytes read from the device.
         """
+        # Send the request bytes to the device:
         self.write(data)
+        # Ensure all bytes have physically left the OS driver and been transmitted
+        # to the device before we start waiting for a response:
+        self.flush()
+        # Perform the readline operation after flushing the data bytes:
         return self.readline(eol, maximum_bytes)
 
     def flush(self) -> None:
