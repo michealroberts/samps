@@ -171,7 +171,7 @@ class TestSerialCommonInterface(unittest.TestCase):
         """
         Test that read raises a SerialReadError after the timeout expires:
         """
-        short_serial = SerialCommonInterface(
+        serial = SerialCommonInterface(
             port=self.slave_device_name,
             baudrate=9600,
             params={
@@ -183,12 +183,14 @@ class TestSerialCommonInterface(unittest.TestCase):
                 "rtscts": False,
             },
         )
-        short_serial.open()
+        serial.open()
         start_time = time.time()
+
         with self.assertRaises(SerialReadError):
-            short_serial.read(1)
+            serial.read(1)
+
         self.assertGreaterEqual(time.time() - start_time, 0.1)
-        short_serial.close()
+        serial.close()
 
     def test_constructor_without_params_uses_defaults(self) -> None:
         """
