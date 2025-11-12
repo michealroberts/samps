@@ -292,10 +292,13 @@ class SerialCommonInterface:
         attributes["ispeed"] = baudrate
         attributes["ospeed"] = baudrate
 
-        # Configure VMIN/VTIME for read timeouts:
-        attributes["control_chars"][VMIN] = 1 if self._timeout is None else 0
-        attributes["control_chars"][VTIME] = (
-            0 if self._timeout is None else int(self._timeout * 10)
+        # Return immediately when VTIME expires, even if no bytes are available:
+        attributes["control_chars"][VMIN] = 0
+
+        # Configure an inter-byte timeout that relates to the prescribed timeout and
+        # clamp to a maximum of 255:
+        attributes["control_chars"][VTIME] = max(
+            1, min(255, int(round(self._timeout * 10)))
         )
 
         # Construct the TTY attributes list in the format expected by tcsetattr:
@@ -341,7 +344,8 @@ class SerialCommonInterface:
         # Configure the TTY settings using the provided attributes:
         self._configure_tty_settings(attributes)
 
-        # Switch the file descriptor back to blocking mode so reads honor termios VMIN/VTIME settings:
+        # Switch the file descriptor back to blocking mode so reads honor termios
+        # VMIN/VTIME settings:
         os.set_blocking(fd, True)
 
         # Finally, set the serial port to open:
@@ -411,11 +415,9 @@ class SerialCommonInterface:
                     continue
                 raise SerialReadError(f"Reading from serial port failed: {e}")
 
-            # If the port was ready but returned no data, treat it as a disconnection.
+            # Keep waiting for more bytes and do NOT treat as a disconnect:
             if not chunk:
-                raise SerialReadError(
-                    "The device reported readiness to read but returned no data."
-                )
+                continue
 
             # If the chunk read was successful, append it to the data:
             read.extend(chunk)
@@ -478,15 +480,13 @@ class SerialCommonInterface:
                     continue
                 raise SerialReadError(f"Reading from serial port failed: {e}")
 
-            # If the port was ready but returned no data, treat it as a disconnection.
+            # Keep waiting for more bytes and do NOT treat as a disconnect:
             if not chunk:
-                raise SerialReadError(
-                    "The device reported readiness to read but returned no data."
-                )
+                continue
 
             # If the chunk read was successful, process it by checking if the end-of-line
             # marker is within this chunk
-            if eol in chunk:
+            if chunk.endswith(eol) or eol in chunk:
                 # Find the index position of the marker and append up to and including it:
                 index = chunk.index(eol) + len(eol)
                 read.extend(chunk[:index])
@@ -582,13 +582,13 @@ class SerialCommonInterface:
         """
         Discard data in the input buffer (flush the input buffer).
         """
+        if self._fd is None:
+            raise RuntimeError("File descriptor is not available.")
+
         if not self.is_open():
             raise RuntimeError(
                 "Port must be configured and open before it can be used."
             )
-
-        if self._fd is None:
-            raise RuntimeError("File descriptor is not available.")
 
         # Only meaningful for TTYs; if not a TTY (very rare for “serial”), treat as no-op:
         try:
