@@ -426,9 +426,6 @@ class USBTMCCommonInterface:
             except OSError as e:
                 # Retry on transient POSIX errors:
                 if e.errno in (EAGAIN, EWOULDBLOCK, EINTR):
-                    if self._fd is None:
-                        raise RuntimeError("File descriptor is not available.")
-
                     _, w, _ = select([], [self._fd], [], self._timeout)
 
                     if not w:
@@ -460,8 +457,7 @@ class USBTMCCommonInterface:
         Returns:
             The response bytes read from the device.
         """
-        to_send = data if data.endswith(eol) else data + eol
-        self.write(to_send)
+        self.write(data)
         return self.readline(eol, maximum_bytes)
 
     def flush(self) -> None:
