@@ -9,6 +9,7 @@ import os
 from errno import EAGAIN, EINTR, EINVAL, ENOTTY, EWOULDBLOCK
 from fcntl import ioctl
 from select import select
+from struct import pack
 from termios import (
     CLOCAL,
     CREAD,
@@ -50,10 +51,12 @@ DEFAULT_TIMEOUT = 2.0
 
 # **************************************************************************************
 
-USBTMC_IOCTL_ABORT_BULK_OUT = 0xB000
-USBTMC_IOCTL_ABORT_BULK_IN = 0xB001
-USBTMC_IOCTL_CLEAR = 0xB002
-USBTMC_IOCTL_GET_CAPS = 0xB003
+USBTMC_IOCTL_CLEAR = 0x40045B04
+USBTMC_IOCTL_ABORT_BULK_OUT = 0x40045B03
+USBTMC_IOCTL_ABORT_BULK_IN = 0x40045B02
+
+USBTMC_IOCTL_GET_TIMEOUT = 0x80045B09
+USBTMC_IOCTL_SET_TIMEOUT = 0x40045B0A
 
 # **************************************************************************************
 
@@ -113,6 +116,9 @@ class USBTMCCommonInterface:
 
         # Initialize the timeout handler with the provided timeout value:
         self._timeout = DEFAULT_TIMEOUT if timeout is None else timeout
+
+        # Set the timeout directly on the USB TMC device:
+        self.set_timeout(timeout=self._timeout)
 
     def _get_termios_attributes(self) -> TTYAttributes:
         """
@@ -569,6 +575,48 @@ class USBTMCCommonInterface:
             port: New device path (e.g., "/dev/usbtmc1").
         """
         self._port = port
+
+    @property
+    def timeout(self) -> float:
+        """
+        Get the current I/O timeout in seconds.
+
+        Returns:
+            The timeout value in seconds.
+        """
+        return self._timeout
+
+    def set_timeout(self, timeout: float) -> None:
+        """
+        Set the I/O timeout in seconds.
+
+        Args:
+            timeout: Desired timeout in seconds (>= 0.0).
+        """
+        if timeout < 0.0:
+            raise ValueError("Timeout must be greater than or equal to 0.0")
+
+        self._timeout = float(timeout)
+
+        # If device is not open yet, defer the kernel call until open():
+        if self._fd is None or not self.is_open():
+            return
+
+        timeout_ms = int(round(self._timeout * 1000.0))
+
+        try:
+            # Pack the 32-bit unsigned milliseconds value and issue the ioctl to
+            # set timeout (milliseconds) in the driver:
+            ioctl(self._fd, USBTMC_IOCTL_SET_TIMEOUT, pack("I", timeout_ms))
+        except OSError as e:
+            # Raise a friendlier error if the ioctl is not supported:
+            if e.errno in (ENOTTY, EINVAL):
+                raise RuntimeError(
+                    "USBTMC set_timeout not supported by kernel driver"
+                ) from e
+            raise
+
+        return
 
     def __enter__(self) -> "USBTMCCommonInterface":
         """
