@@ -589,6 +589,12 @@ class SerialCommonInterface:
         """
         self.abort_in()
 
+    def clear_output_buffer(self) -> None:
+        """
+        Discard data in the output buffer (flush the output buffer).
+        """
+        self.abort_out()
+
     def abort_in(self) -> None:
         """
         Discard data in the input buffer (flush the input buffer).
