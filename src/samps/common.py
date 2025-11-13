@@ -583,6 +583,12 @@ class SerialCommonInterface:
         # transmitted and drained:
         tcdrain(self._fd)
 
+    def clear_input_buffer(self) -> None:
+        """
+        Discard data in the input buffer (flush the input buffer).
+        """
+        self.abort_in()
+
     def abort_in(self) -> None:
         """
         Discard data in the input buffer (flush the input buffer).
