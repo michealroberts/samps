@@ -351,6 +351,9 @@ class SerialCommonInterface:
         # Finally, set the serial port to open:
         self._is_open = True
 
+        # Flush both of the input and output buffers of any lingering data:
+        self.clear_buffer()
+
     def close(self) -> None:
         """
         Close the serial port if it is open.
@@ -582,6 +585,17 @@ class SerialCommonInterface:
         # Wait until all output written to file descriptor fd has been
         # transmitted and drained:
         tcdrain(self._fd)
+
+    def clear_buffer(self) -> None:
+        """
+        Clear both input and output buffers of the serial port.
+
+        Raises:
+            RuntimeError: If the port is not open or the file descriptor is not
+            available.
+        """
+        self.abort_in()
+        self.abort_out()
 
     def clear_input_buffer(self) -> None:
         """
