@@ -39,6 +39,7 @@ from termios import (
     ONLCR,
     OPOST,
     PARENB,
+    PARMRK,
     PARODD,
     TCIFLUSH,
     TCIOFLUSH,
@@ -201,7 +202,7 @@ class SerialCommonInterface:
         Raises:
             RuntimeError: If the file descriptor is not available.
         """
-        if not self._fd:
+        if self._fd is None:
             raise RuntimeError("File descriptor is not available.")
 
         # Get the current TTY attributes for the file descriptor:
@@ -218,7 +219,7 @@ class SerialCommonInterface:
             RuntimeError: If the file descriptor is not available.
             ValueError: If bytesize, stopbits, or parity parameters are invalid.
         """
-        if not self._fd:
+        if self._fd is None:
             raise RuntimeError("File descriptor is not available.")
 
         # Enable local mode and receiver:
@@ -231,7 +232,9 @@ class SerialCommonInterface:
         attributes["oflag"] &= ~(OPOST | ONLCR | OCRNL)
 
         # Disable input transformations and parity checking:
-        attributes["iflag"] &= ~(INLCR | IGNCR | ICRNL | IGNBRK | INPCK | ISTRIP)
+        attributes["iflag"] &= ~(
+            INLCR | IGNCR | ICRNL | IGNBRK | INPCK | ISTRIP | PARMRK
+        )
 
         attributes["cflag"] &= ~CSIZE
 
