@@ -27,8 +27,12 @@ from .errors import (
     SerialReadError,
     SerialTimeoutError,
     SerialWriteError,
+    XIMCCommandNotRecognisedError,
+    XIMCInvalidCRCError,
+    XIMCValueOutOfRangeError,
 )
 from .utilities import hex_to_int, int_to_hex
+from .ximc import XIMCSerialInterface
 
 # If the operating system is POSIX compliant, import the Serial class from the common module:
 if name == "posix":
@@ -57,6 +61,10 @@ __all__: list[str] = [
     "SerialReadError",
     "SerialTimeoutError",
     "SerialWriteError",
+    "XIMCSerialInterface",
+    "XIMCCommandNotRecognisedError",
+    "XIMCInvalidCRCError",
+    "XIMCValueOutOfRangeError",
     "get_cyclic_redundancy_checksum",
     "hex_to_int",
     "int_to_hex",
