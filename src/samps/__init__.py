@@ -28,11 +28,16 @@ from .errors import (
     SerialTimeoutError,
     SerialWriteError,
 )
+from .tmc import (
+    USBTMCCommonInterface,
+    USBTMCCommonInterfaceParameters,
+)
 from .utilities import hex_to_int, int_to_hex
 
 # If the operating system is POSIX compliant, import the Serial class from the common module:
 if name == "posix":
     from .common import SerialCommonInterface as Serial
+    from .tmc import USBTMCCommonInterface as USBTMC
 
 # **************************************************************************************
 
@@ -57,6 +62,9 @@ __all__: list[str] = [
     "SerialReadError",
     "SerialTimeoutError",
     "SerialWriteError",
+    "USBTMCCommonInterface",
+    "USBTMCCommonInterfaceParameters",
+    "USBTMC",
     "get_cyclic_redundancy_checksum",
     "hex_to_int",
     "int_to_hex",
