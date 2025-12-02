@@ -8,13 +8,11 @@
 import os
 from errno import EAGAIN, EINTR, EINVAL, ENOTTY, EWOULDBLOCK
 from fcntl import ioctl
-from select import select
 from struct import pack
 from types import TracebackType
 from typing import Optional, Type, TypedDict
 
 from .errors import SerialReadError, SerialWriteError
-from .handlers import ReadTimeoutHandler
 from .utilities import no_op
 
 # **************************************************************************************
@@ -156,61 +154,19 @@ class USBTMCCommonInterface:
         if size == 0:
             return b""
 
-        # Initialize a bytearray to accumulate incoming data:
-        read: bytearray = bytearray()
+        try:
+            # Blocking read call to read from the USBTMC device:
+            data: bytes = os.read(self._fd, size)
+        except OSError as e:
+            raise SerialReadError(f"Reading from USBTMC device failed: {e}") from e
 
-        # Convert timeout from seconds to milliseconds, as required by ReadTimeoutHandler:
-        timer = ReadTimeoutHandler(timeout=self._timeout * 1000)
-
-        timer.start()
-
-        # Continue reading until we have collected the requested number of bytes
-        # or until the overall timeout period has elapsed.
-        while len(read) < size:
-            # Check if the timeout has expired:
-            if timer.has_expired():
-                raise SerialReadError(
-                    f"Read timeout after {self._timeout}s, got {len(read)}/{size} bytes"
-                )
-
-            # Wait for readability with the remaining time budget
-            remaining = timer.remaining()
-
-            r, _, _ = select(
-                [self._fd],
-                [],
-                [],
-                max(0.0, min(self._timeout, (remaining or 0.0) / 1000.0)),
+        # If the port was ready but returned no data, treat it as a disconnection.
+        if not data:
+            raise SerialReadError(
+                "The device reported readiness to read but returned no data."
             )
 
-            if not r:
-                raise SerialReadError(
-                    f"Read timeout after {self._timeout}s (no data ready)"
-                )
-
-            try:
-                chunk: bytes = os.read(self._fd, size - len(read))
-            except OSError as e:
-                # Retry on non-fatal errors and propagate others upwards:
-                if e.errno in (
-                    EAGAIN,
-                    EWOULDBLOCK,
-                    EINTR,
-                ):
-                    continue
-                raise SerialReadError(f"Reading from USBTMC device failed: {e}") from e
-
-            # If the port was ready but returned no data, treat it as a disconnection.
-            if not chunk:
-                raise SerialReadError(
-                    "The device reported readiness to read but returned no data."
-                )
-
-            # If the chunk read was successful, append it to the data:
-            read.extend(chunk)
-
-        # Finally, return the accumulated data:
-        return bytes(read)
+        return data
 
     def readline(self, eol: bytes = b"\n", maximum_bytes: int = -1) -> bytes:
         """
@@ -231,65 +187,36 @@ class USBTMCCommonInterface:
         # Initialize a bytearray to accumulate incoming data:
         read: bytearray = bytearray()
 
-        # Convert timeout from seconds to milliseconds, as required by ReadTimeoutHandler:
-        timer = ReadTimeoutHandler(timeout=self._timeout * 1000)
-
-        timer.start()
-
         # Determine how many bytes to read in this chunk:
         chunk_size = 1024
 
-        # Continue reading until we have collected the requested number of bytes
-        # or until the overall timeout period has elapsed:
         while True:
             # Check if we have read enough bytes to satisfy max_bytes:
             if maximum_bytes > 0 and len(read) >= maximum_bytes:
-                break
+                # We have reached the maximum allowed bytes; return what we have:
+                return bytes(read)
 
-            # Check if the timeout has expired:
-            if timer.has_expired():
-                raise SerialReadError(
-                    f"Read timeout after {self._timeout}s, got {len(read)} bytes"
-                )
+            # If maximum_bytes is set, do not read past it:
+            if maximum_bytes > 0:
+                remaining = maximum_bytes - len(read)
 
-            # Wait for readability with the remaining time budget:
-            remaining = timer.remaining()
-
-            r, _, _ = select(
-                [self._fd],
-                [],
-                [],
-                max(0.0, min(self._timeout, (remaining or 0.0) / 1000.0)),
-            )
-
-            # If no file descriptors are ready, return partial data if any is available:
-            if not r:
-                if len(read) > 0:
+                # If the remaining bytes is less than or equal to zero, return what we have:
+                if remaining <= 0:
                     return bytes(read)
 
-                raise SerialReadError(
-                    f"Read timeout after {self._timeout}s (no data ready)"
-                )
-
-            # Limit read size if maximum_bytes is used:
-            if maximum_bytes > 0:
-                chunk_size = min(chunk_size, maximum_bytes - len(read))
+                # Adjust chunk size to not exceed maximum_bytes:
+                chunk_size = min(1024, remaining)
 
             try:
+                # Blocking read call to read from the USBTMC device:
                 chunk: bytes = os.read(self._fd, chunk_size)
             except OSError as e:
-                # Retry on non-fatal errors and propagate others upwards:
-                if e.errno in (
-                    EAGAIN,
-                    EWOULDBLOCK,
-                    EINTR,
-                ):
-                    continue
-                raise SerialReadError(f"Reading from USBTMC device failed: {e}")
+                raise SerialReadError(f"Reading from USBTMC device failed: {e}") from e
 
-            # If the port was ready but returned no data, return partial data if any:
+            # If the port returned no data at all:
             if not chunk:
                 if len(read) > 0:
+                    # Return whatever we have so far.
                     return bytes(read)
                 raise SerialReadError(
                     "The device reported readiness to read but returned no data."
@@ -302,9 +229,6 @@ class USBTMCCommonInterface:
             if eol in read:
                 index = read.index(eol) + len(eol)
                 return bytes(read[:index])
-
-        # Finally, return the accumulated data:
-        return bytes(read)
 
     def write(self, data: bytes) -> int:
         """
@@ -338,14 +262,8 @@ class USBTMCCommonInterface:
             try:
                 n = os.write(self._fd, data[written:])
             except OSError as e:
-                # Retry on transient POSIX errors:
+                # Retry on transient POSIX errors for a blocking descriptor:
                 if e.errno in (EAGAIN, EWOULDBLOCK, EINTR):
-                    _, w, _ = select([], [self._fd], [], self._timeout)
-
-                    if not w:
-                        raise SerialWriteError(
-                            f"Write timeout after {self._timeout}s (not writable)"
-                        )
                     continue
                 raise SerialWriteError(f"Writing to USBTMC device failed: {e}") from e
 
