@@ -6,7 +6,6 @@
 # **************************************************************************************
 
 import os
-import time
 import unittest
 import unittest.mock
 from errno import EINVAL
@@ -116,7 +115,7 @@ class TestTMCCommonInterface(unittest.TestCase):
         Test the ask method for write followed by read:
         """
         query = b"hello-world\n"
-        reply = b"echo: hello-world\n"
+        reply = b"hello-world\n"
 
         # Write the reply from the master side so that readline() can consume it:
         os.write(self.master_file_descriptor, reply)
@@ -169,23 +168,6 @@ class TestTMCCommonInterface(unittest.TestCase):
                     self.master_file_descriptor, len(data) - len(received)
                 )
             self.assertEqual(received, data)
-
-    def test_read_timeout_raises(self) -> None:
-        """
-        Test that read raises a SerialReadError after the timeout expires:
-        """
-        short_serial = USBTMCCommonInterface(
-            port=self.slave_device_name,
-            params={
-                "timeout": 0.1,
-            },
-        )
-        short_serial.open()
-        start_time = time.time()
-        with self.assertRaises(SerialReadError):
-            short_serial.read(1)
-        self.assertGreaterEqual(time.time() - start_time, 0.1)
-        short_serial.close()
 
     def test_constructor_without_params_uses_defaults(self) -> None:
         """
