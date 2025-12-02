@@ -100,9 +100,8 @@ class USBTMCCommonInterface:
         Raises:
             SerialReadError: If opening the device fails.
         """
-        # Specify the flags for opening the USBTMC device, e.g., in read/write mode,
-        # and in non-blocking mode:
-        flags = os.O_RDWR | os.O_NONBLOCK
+        # Specify the flags for opening the USBTMC device, e.g., in read/write mode:
+        flags = os.O_RDWR
 
         try:
             # Attempt to open the USBTMC device with the specified flags:
@@ -112,11 +111,11 @@ class USBTMCCommonInterface:
 
         self._fd = fd
 
-        # Set the timeout directly on the USB TMC device:
-        self.set_timeout(timeout=self._timeout)
-
         # Finally, set the USBTMC device to open:
         self._is_open = True
+
+        # Set the timeout directly on the USB TMC device:
+        self.set_timeout(timeout=self._timeout)
 
     def close(self) -> None:
         """
@@ -508,10 +507,8 @@ class USBTMCCommonInterface:
         except OSError as e:
             # Raise a friendlier error if the ioctl is not supported:
             if e.errno in (ENOTTY, EINVAL):
-                raise RuntimeError(
-                    "USBTMC set_timeout not supported by kernel driver"
-                ) from e
-            raise
+                return
+            raise RuntimeError(f"Setting USBTMC timeout failed: {e}") from e
 
     def __enter__(self) -> "USBTMCCommonInterface":
         """
