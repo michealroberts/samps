@@ -1,6 +1,6 @@
 [project]
 name = "samps"
-version = "0.9.0"
+version = "0.10.0"
 description = "A hypermodern, type-safe, zero-dependency python library for serial port I/O access"
 authors = [{ name = "michealroberts", email = "michael@observerly.com" }]
 keywords = [
