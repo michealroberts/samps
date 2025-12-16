@@ -22,6 +22,7 @@ from .baudrate import BAUDRATE_LOOKUP_FLAGS, BAUDRATES, BaudrateType
 from .crc import get_cyclic_redundancy_checksum
 from .errors import (
     BaseProtocolReadError,
+    BaseProtocolTimeoutError,
     SerialReadError,
     SerialTimeoutError,
     SerialWriteError,
@@ -56,6 +57,7 @@ __all__: list[str] = [
     "BaudrateType",
     "BaseInterface",
     "BaseProtocolReadError",
+    "BaseProtocolTimeoutError",
     "Serial",
     "SerialAsyncCommonInterface",
     "SerialCommonInterface",
