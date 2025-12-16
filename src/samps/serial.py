@@ -61,6 +61,7 @@ from termios import (
 from types import TracebackType
 from typing import Literal, Optional, Type, TypedDict
 
+from .base import BaseInterface
 from .baudrate import BAUDRATE_LOOKUP_FLAGS, BAUDRATES, BaudrateType
 from .errors import SerialReadError, SerialWriteError
 from .handlers import ReadTimeoutHandler
@@ -118,7 +119,7 @@ default_serial_parameters: SerialCommonInterfaceParameters = (
 # **************************************************************************************
 
 
-class SerialCommonInterface:
+class SerialCommonInterface(BaseInterface):
     """
     This class provides a common interface for serial communication.
     """
