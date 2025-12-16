@@ -18,26 +18,23 @@ if name == "nt":
 
 from .asynchronous import SerialAsyncCommonInterface
 from .baudrate import BAUDRATE_LOOKUP_FLAGS, BAUDRATES, BaudrateType
-from .common import (
-    SerialCommonInterface,
-    SerialCommonInterfaceParameters,
-)
 from .crc import get_cyclic_redundancy_checksum
 from .errors import (
     SerialReadError,
     SerialTimeoutError,
     SerialWriteError,
 )
+from .serial import (
+    SerialCommonInterface,
+    SerialCommonInterfaceParameters,
+)
+from .serial import SerialCommonInterface as Serial
 from .tmc import (
     USBTMCCommonInterface,
     USBTMCCommonInterfaceParameters,
 )
+from .tmc import USBTMCCommonInterface as USBTMC
 from .utilities import hex_to_int, int_to_hex
-
-# If the operating system is POSIX compliant, import the Serial class from the common module:
-if name == "posix":
-    from .common import SerialCommonInterface as Serial
-    from .tmc import USBTMCCommonInterface as USBTMC
 
 # **************************************************************************************
 
