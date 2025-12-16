@@ -30,6 +30,18 @@ class BaseProtocolTimeoutError(Exception):
 # **************************************************************************************
 
 
+class BaseProtocolWriteError(Exception):
+    """
+    Exception class for base protocol write errors.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+# **************************************************************************************
+
+
 class SerialReadError(Exception):
     """
     Exception class for serial read errors.

@@ -23,6 +23,7 @@ from .crc import get_cyclic_redundancy_checksum
 from .errors import (
     BaseProtocolReadError,
     BaseProtocolTimeoutError,
+    BaseProtocolWriteError,
     SerialReadError,
     SerialTimeoutError,
     SerialWriteError,
@@ -58,6 +59,7 @@ __all__: list[str] = [
     "BaseInterface",
     "BaseProtocolReadError",
     "BaseProtocolTimeoutError",
+    "BaseProtocolWriteError",
     "Serial",
     "SerialAsyncCommonInterface",
     "SerialCommonInterface",
