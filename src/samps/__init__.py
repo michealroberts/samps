@@ -17,6 +17,7 @@ if name == "nt":
 # **************************************************************************************
 
 from .asynchronous import SerialAsyncCommonInterface
+from .base import BaseInterface
 from .baudrate import BAUDRATE_LOOKUP_FLAGS, BAUDRATES, BaudrateType
 from .crc import get_cyclic_redundancy_checksum
 from .errors import (
@@ -52,6 +53,7 @@ __all__: list[str] = [
     "BAUDRATE_LOOKUP_FLAGS",
     "BAUDRATES",
     "BaudrateType",
+    "BaseInterface",
     "Serial",
     "SerialAsyncCommonInterface",
     "SerialCommonInterface",
