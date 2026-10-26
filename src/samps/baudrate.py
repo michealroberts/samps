@@ -5,6 +5,7 @@
 
 # **************************************************************************************
 
+import sys
 from termios import (
     B0,
     B50,
@@ -81,6 +82,21 @@ BaudrateType: TypeAlias = Literal[
     57600,
     115200,
     230400,
+    # Linux-only high-speed baud rates (typed for all platforms, but only present in
+    # BAUDRATE_LOOKUP_FLAGS at runtime on Linux, so non-Linux platforms will reject them
+    # with a ValueError when validated):
+    460800,
+    500000,
+    576000,
+    921600,
+    1000000,
+    1152000,
+    1500000,
+    2000000,
+    2500000,
+    3000000,
+    3500000,
+    4000000,
 ]
 
 # **************************************************************************************
@@ -107,5 +123,73 @@ BAUDRATE_LOOKUP_FLAGS: Dict[BaudrateType, int] = {
     115200: B115200,
     230400: B230400,
 }
+
+# **************************************************************************************
+
+"""
+Linux-only high-speed baud rates.
+
+The POSIX standard only defines baud rate constants up to B38400, with B57600, B115200 
+and B230400 being widely supported extensions. Linux additionally exposes high-speed 
+constants (B460800 through B4000000) via termios, which are commonly used by USB-serial 
+adapters (e.g., FTDI, CP210x, CH340) and embedded UARTs.
+
+These constants are not available on all platforms (e.g., macOS), so we conditionally 
+import them on Linux only, extending BAUDRATES and BAUDRATE_LOOKUP_FLAGS in place. Note 
+that whilst the kernel accepts these rates, it is the responsibility of the caller to 
+ensure that the underlying hardware actually supports the requested baud rate.
+"""
+if sys.platform == "linux":
+    # Import the high-speed baud rate constants, which are only defined on Linux:
+    from termios import (
+        B460800,
+        B500000,
+        B576000,
+        B921600,
+        B1000000,
+        B1152000,
+        B1500000,
+        B2000000,
+        B2500000,
+        B3000000,
+        B3500000,
+        B4000000,
+    )
+
+    # Append the high-speed termios constants to the list of standard baud rates:
+    BAUDRATES.extend(
+        [
+            B460800,
+            B500000,
+            B576000,
+            B921600,
+            B1000000,
+            B1152000,
+            B1500000,
+            B2000000,
+            B2500000,
+            B3000000,
+            B3500000,
+            B4000000,
+        ]
+    )
+
+    # Map each numeric high-speed baud rate to its corresponding termios constant:
+    BAUDRATE_LOOKUP_FLAGS.update(
+        {
+            460800: B460800,
+            500000: B500000,
+            576000: B576000,
+            921600: B921600,
+            1000000: B1000000,
+            1152000: B1152000,
+            1500000: B1500000,
+            2000000: B2000000,
+            2500000: B2500000,
+            3000000: B3000000,
+            3500000: B3500000,
+            4000000: B4000000,
+        }
+    )
 
 # **************************************************************************************
