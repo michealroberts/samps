@@ -155,6 +155,9 @@ class SerialCommonInterface(BaseInterface):
     # Whether the serial port is open or not:
     _is_open: bool = False
 
+    # The bytes read from the serial port but not yet returned to the caller:
+    _buffer: bytearray
+
     def __init__(
         self,
         port: str,
@@ -199,6 +202,9 @@ class SerialCommonInterface(BaseInterface):
         self._xonxoff = params.get("xonxoff", False)
 
         self._rtscts = params.get("rtscts", False)
+
+        # Initialize an empty buffer for bytes read beyond a requested eol marker:
+        self._buffer = bytearray()
 
     def _get_termios_attributes(self) -> TTYAttributes:
         """
@@ -428,6 +434,9 @@ class SerialCommonInterface(BaseInterface):
         self._fd = None
         self._is_open = False
 
+        # Discard any bytes retained by a previous readline:
+        self._buffer.clear()
+
     def read(self, size: int = 1) -> bytes:
         """
         Read up to `size` bytes from the serial port, respecting the configured timeout.
@@ -454,6 +463,10 @@ class SerialCommonInterface(BaseInterface):
 
         # Initialize a bytearray to accumulate incoming data:
         read: bytearray = bytearray()
+
+        # Consume any bytes retained by a previous readline before reading the port:
+        read.extend(self._buffer[:size])
+        del self._buffer[:size]
 
         # Convert timeout from seconds to milliseconds, as required by ReadTimeoutHandler:
         timer = ReadTimeoutHandler(timeout=self._timeout * 1000)
@@ -534,17 +547,22 @@ class SerialCommonInterface(BaseInterface):
             if maximum_bytes > 0:
                 chunk_size = min(chunk_size, maximum_bytes - len(read))
 
-            try:
-                chunk: bytes = os.read(self._fd, chunk_size)
-            except OSError as e:
-                # Retry on non-fatal errors and propagate others upwards:
-                if e.errno in (
-                    EAGAIN,
-                    EWOULDBLOCK,
-                    EINTR,
-                ):
-                    continue
-                raise SerialReadError(f"Reading from serial port failed: {e}")
+            # Consume any bytes retained by a previous readline before reading the port:
+            if self._buffer:
+                chunk: bytes = bytes(self._buffer[:chunk_size])
+                del self._buffer[:chunk_size]
+            else:
+                try:
+                    chunk = os.read(self._fd, chunk_size)
+                except OSError as e:
+                    # Retry on non-fatal errors and propagate others upwards:
+                    if e.errno in (
+                        EAGAIN,
+                        EWOULDBLOCK,
+                        EINTR,
+                    ):
+                        continue
+                    raise SerialReadError(f"Reading from serial port failed: {e}")
 
             # Keep waiting for more bytes and do NOT treat as a disconnect:
             if not chunk:
@@ -556,6 +574,8 @@ class SerialCommonInterface(BaseInterface):
                 # Find the index position of the marker and append up to and including it:
                 index = chunk.index(eol) + len(eol)
                 read.extend(chunk[:index])
+                # Retain any bytes after the marker, ahead of any already retained bytes:
+                self._buffer[:0] = chunk[index:]
                 break
 
             # Otherwise, append the entire chunk
@@ -684,6 +704,9 @@ class SerialCommonInterface(BaseInterface):
                 "Port must be configured and open before it can be used."
             )
 
+        # Discard any bytes retained by a previous readline:
+        self._buffer.clear()
+
         # Only meaningful for TTYs; if not a TTY (very rare for “serial”), treat as no-op:
         try:
             tcflush(self._fd, TCIFLUSH) if os.isatty(self._fd) else no_op()
@@ -721,6 +744,9 @@ class SerialCommonInterface(BaseInterface):
 
         if self._fd is None:
             raise RuntimeError("File descriptor is not available.")
+
+        # Discard any bytes retained by a previous readline:
+        self._buffer.clear()
 
         try:
             tcflush(self._fd, TCIOFLUSH) if os.isatty(self._fd) else no_op()
