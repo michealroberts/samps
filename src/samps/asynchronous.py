@@ -577,7 +577,8 @@ class SerialAsyncCommonInterface:
 
     async def flush(self) -> None:
         """
-        Block until all written output has been transmitted to the serial device.
+        Wait, without blocking the event loop, until all written output has been
+        transmitted to the serial device.
 
         Raises:
             RuntimeError: If the port is not open.
@@ -593,8 +594,8 @@ class SerialAsyncCommonInterface:
             raise RuntimeError("File descriptor is not available.")
 
         # Wait until all output written to file descriptor fd has been
-        # transmitted and drained:
-        tcdrain(self._fd)
+        # transmitted and drained, off-loop so the event loop is not blocked:
+        await self._loop.run_in_executor(None, tcdrain, self._fd)
 
     def is_open(self) -> bool:
         """

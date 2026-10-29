@@ -293,6 +293,33 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(RuntimeError):
             await self.serial.flush()
 
+    async def test_flush_does_not_block_event_loop(self) -> None:
+        """
+        Test that flush waits for the output to drain without blocking the event loop:
+        """
+        ticks = 0
+
+        # Simulate a slow drain of the output buffer by the serial device:
+        def slow_tcdrain(fd: int) -> None:
+            time.sleep(0.1)
+
+        # Count how often the event loop gets to run other tasks during the flush:
+        async def tick() -> None:
+            nonlocal ticks
+            while True:
+                ticks += 1
+                await asyncio.sleep(0)
+
+        ticker = asyncio.create_task(tick())
+
+        try:
+            with unittest.mock.patch("samps.asynchronous.tcdrain", new=slow_tcdrain):
+                await self.serial.flush()
+        finally:
+            ticker.cancel()
+
+        self.assertGreater(ticks, 0)
+
     async def test_property_setters_apply_settings(self) -> None:
         """
         Test that setting bytesize and parity updates internal state:
