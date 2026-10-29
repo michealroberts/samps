@@ -45,7 +45,7 @@ jobs:
 
       - name: Format w/Ruff
         run: |
-          uv run ruff format
+          uv run ruff format --check
 
       - name: Static Analysis w/mypy
         run: |
