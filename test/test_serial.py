@@ -296,6 +296,71 @@ class TestSerialCommonInterface(unittest.TestCase):
         self.assertGreaterEqual(time.time() - start_time, 0.1)
         serial.close()
 
+    def test_read_with_zero_timeout_returns_waiting_data(self) -> None:
+        """
+        Test that read with a zero timeout returns data already waiting on the port:
+        """
+        serial = SerialCommonInterface(
+            port=self.slave_device_name,
+            baudrate=9600,
+            params={
+                "bytesize": 8,
+                "parity": "N",
+                "stopbits": 1,
+                "timeout": 0,
+                "xonxoff": False,
+                "rtscts": False,
+            },
+        )
+        serial.open()
+        os.write(self.master_file_descriptor, b"x")
+        self.assertEqual(serial.read(1), b"x")
+        serial.close()
+
+    def test_readline_with_zero_timeout_returns_waiting_line(self) -> None:
+        """
+        Test that readline with a zero timeout returns a line already waiting on the port:
+        """
+        serial = SerialCommonInterface(
+            port=self.slave_device_name,
+            baudrate=9600,
+            params={
+                "bytesize": 8,
+                "parity": "N",
+                "stopbits": 1,
+                "timeout": 0,
+                "xonxoff": False,
+                "rtscts": False,
+            },
+        )
+        serial.open()
+        os.write(self.master_file_descriptor, b"hi\n")
+        self.assertEqual(serial.readline(), b"hi\n")
+        serial.close()
+
+    def test_read_with_zero_timeout_raises_when_no_data(self) -> None:
+        """
+        Test that read with a zero timeout raises a SerialReadError when no data is waiting:
+        """
+        serial = SerialCommonInterface(
+            port=self.slave_device_name,
+            baudrate=9600,
+            params={
+                "bytesize": 8,
+                "parity": "N",
+                "stopbits": 1,
+                "timeout": 0,
+                "xonxoff": False,
+                "rtscts": False,
+            },
+        )
+        serial.open()
+
+        with self.assertRaises(SerialReadError):
+            serial.read(1)
+
+        serial.close()
+
     def test_constructor_without_params_uses_defaults(self) -> None:
         """
         Test that omitting params falls back to the default parameters:

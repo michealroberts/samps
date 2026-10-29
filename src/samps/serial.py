@@ -477,30 +477,27 @@ class SerialCommonInterface(BaseInterface):
         # Continue reading until we have collected the requested number of bytes
         # or until the overall timeout period has elapsed.
         while len(read) < size:
-            # Check if the timeout has expired:
-            if timer.has_expired():
-                raise SerialReadError(
-                    f"Read timeout after {self._timeout}s, got {len(read)}/{size} bytes"
-                )
-
             try:
                 chunk: bytes = os.read(self._fd, size - len(read))
             except OSError as e:
-                # Retry on non-fatal errors and propagate others upwards:
-                if e.errno in (
+                # Propagate fatal errors upwards:
+                if e.errno not in (
                     EAGAIN,
                     EWOULDBLOCK,
                     EINTR,
                 ):
-                    continue
-                raise SerialReadError(f"Reading from serial port failed: {e}")
+                    raise SerialReadError(f"Reading from serial port failed: {e}")
+                # Treat non-fatal errors as an empty read and retry:
+                chunk = b""
 
-            # Keep waiting for more bytes and do NOT treat as a disconnect:
-            if not chunk:
-                continue
-
-            # If the chunk read was successful, append it to the data:
+            # Append any bytes read; an empty chunk is NOT treated as a disconnect:
             read.extend(chunk)
+
+            # Check if the timeout has expired, only after at least one read attempt:
+            if len(read) < size and timer.has_expired():
+                raise SerialReadError(
+                    f"Read timeout after {self._timeout}s, got {len(read)}/{size} bytes"
+                )
 
         # Finally, return the accumulated data:
         return bytes(read)
@@ -535,16 +532,6 @@ class SerialCommonInterface(BaseInterface):
         # Continue reading until we have collected the requested number of bytes
         # or until the overall timeout period has elapsed:
         while True:
-            # Check if we have read enough bytes to satisfy max_bytes:
-            if maximum_bytes > 0 and len(read) >= maximum_bytes:
-                break
-
-            # Check if the timeout has expired:
-            if timer.has_expired():
-                raise SerialReadError(
-                    f"Read timeout after {self._timeout}s, got {len(read)} bytes"
-                )
-
             if maximum_bytes > 0:
                 chunk_size = min(chunk_size, maximum_bytes - len(read))
 
@@ -556,20 +543,17 @@ class SerialCommonInterface(BaseInterface):
                 try:
                     chunk = os.read(self._fd, chunk_size)
                 except OSError as e:
-                    # Retry on non-fatal errors and propagate others upwards:
-                    if e.errno in (
+                    # Propagate fatal errors upwards:
+                    if e.errno not in (
                         EAGAIN,
                         EWOULDBLOCK,
                         EINTR,
                     ):
-                        continue
-                    raise SerialReadError(f"Reading from serial port failed: {e}")
+                        raise SerialReadError(f"Reading from serial port failed: {e}")
+                    # Treat non-fatal errors as an empty read and retry:
+                    chunk = b""
 
-            # Keep waiting for more bytes and do NOT treat as a disconnect:
-            if not chunk:
-                continue
-
-            # If the chunk read was successful, append it to the data:
+            # Append any bytes read; an empty chunk is NOT treated as a disconnect:
             read.extend(chunk)
 
             # Check the data read so far for the end-of-line marker, as the marker may
@@ -581,6 +565,16 @@ class SerialCommonInterface(BaseInterface):
                 self._buffer[:0] = read[index:]
                 del read[index:]
                 break
+
+            # Check if we have read enough bytes to satisfy max_bytes:
+            if maximum_bytes > 0 and len(read) >= maximum_bytes:
+                break
+
+            # Check if the timeout has expired, only after at least one read attempt:
+            if timer.has_expired():
+                raise SerialReadError(
+                    f"Read timeout after {self._timeout}s, got {len(read)} bytes"
+                )
 
         # Finally, return the accumulated data:
         return bytes(read)
