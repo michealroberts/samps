@@ -84,6 +84,25 @@ class TestSerialCommonInterface(unittest.TestCase):
             self.assertTrue(serial_context.is_open())
         self.assertFalse(serial_context.is_open())
 
+    def test_context_manager_exits_cleanly_when_closed_inside(self) -> None:
+        """
+        Test that the context manager exits cleanly when closed inside the block:
+        """
+        with SerialCommonInterface(
+            port=self.slave_device_name,
+            baudrate=9600,
+            params={
+                "bytesize": 8,
+                "parity": "N",
+                "stopbits": 1,
+                "timeout": 0.1,
+                "xonxoff": False,
+                "rtscts": False,
+            },
+        ) as serial_context:
+            serial_context.close()
+        self.assertFalse(serial_context.is_open())
+
     def test_is_base_interface(self) -> None:
         """
         Test that SerialCommonInterface satisfies the BaseInterface protocol:

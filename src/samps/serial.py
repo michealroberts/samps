@@ -906,7 +906,9 @@ class SerialCommonInterface(BaseInterface):
         Context manager exit: closes the serial port.
         """
         try:
-            self.clear()
+            # Only clear the buffers if the port is still open:
+            if self.is_open():
+                self.clear()
         finally:
             self.close()
 
