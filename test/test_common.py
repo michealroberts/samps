@@ -14,7 +14,7 @@ from errno import EINVAL
 from typing import cast
 
 from samps import (
-    BAUDRATES,
+    BAUDRATE_LOOKUP_FLAGS,
     BaudrateType,
     SerialCommonInterface,
     SerialReadError,
@@ -250,7 +250,7 @@ class TestSerialCommonInterface(unittest.TestCase):
         """
         Test that setting baudrate updates internal state without error:
         """
-        for raw in BAUDRATES:
+        for raw in BAUDRATE_LOOKUP_FLAGS:
             baudrate_value: BaudrateType = cast(BaudrateType, raw)
             self.serial.set_baudrate(baudrate_value)
             self.assertEqual(self.serial.baudrate, baudrate_value)
