@@ -369,14 +369,21 @@ class SerialAsyncCommonInterface:
 
         self._fd = fd
 
-        # Get the raw TTY termios attributes for the file descriptor:
-        attributes = self._get_termios_attributes()
+        try:
+            # Get the raw TTY termios attributes for the file descriptor:
+            attributes = self._get_termios_attributes()
 
-        # Configure the TTY settings using the provided attributes off-loop:
-        await self._loop.run_in_executor(None, self._configure_tty_settings, attributes)
+            # Configure the TTY settings using the provided attributes off-loop:
+            await self._loop.run_in_executor(
+                None, self._configure_tty_settings, attributes
+            )
 
-        # Switch the file descriptor back to non-blocking mode so reads honor termios VMIN/VTIME settings:
-        await self._loop.run_in_executor(None, os.set_blocking, fd, False)
+            # Switch the file descriptor back to non-blocking mode so reads honor termios VMIN/VTIME settings:
+            await self._loop.run_in_executor(None, os.set_blocking, fd, False)
+        except Exception:
+            # Release the file descriptor and mark the port closed, then re-raise:
+            await self.close()
+            raise
 
         # Finally, set the serial port to open:
         self._is_open = True
