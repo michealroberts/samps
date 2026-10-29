@@ -7,12 +7,13 @@
 
 import asyncio
 import os
+import struct
 import termios
 import threading
 import time
 import unittest
 import unittest.mock
-from errno import EINVAL
+from errno import EINVAL, ENOTTY
 from typing import cast
 
 from samps import (
@@ -487,6 +488,64 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         self.assertGreaterEqual(
             len(termios_attributes["control_chars"]), termios.VTIME + 1
         )
+
+    async def test_open_sets_modem_lines(self) -> None:
+        """
+        Test that open sets DTR and sets RTS only when rtscts is enabled:
+        """
+        for rtscts in (False, True):
+            with self.subTest(rtscts=rtscts):
+                serial = SerialCommonInterface(
+                    port=self.slave_device_name,
+                    baudrate=9600,
+                    params={
+                        "bytesize": 8,
+                        "parity": "N",
+                        "stopbits": 1,
+                        "timeout": 0.1,
+                        "xonxoff": False,
+                        "rtscts": rtscts,
+                    },
+                )
+
+                with unittest.mock.patch.object(
+                    SerialCommonInterface, "_set_modem_lines", autospec=True
+                ) as set_modem_lines:
+                    await serial.open()
+
+                set_modem_lines.assert_called_once_with(serial, dtr=True, rts=rtscts)
+                await serial.close()
+
+    async def test_set_modem_lines_sets_dtr_bit(self) -> None:
+        """
+        Test that _set_modem_lines sets the DTR bit via TIOCMSET:
+        """
+        # Used to capture the modem bits written by TIOCMSET:
+        written: list[int] = []
+
+        def fake_ioctl(fd: int, request: int, buffer: bytes) -> bytes:
+            if request == termios.TIOCMGET:
+                return struct.pack("I", 0)
+            if request == termios.TIOCMSET:
+                written.append(struct.unpack("I", buffer)[0])
+            return buffer
+
+        with unittest.mock.patch("samps.asynchronous.ioctl", new=fake_ioctl):
+            self.serial._set_modem_lines(dtr=True, rts=False)
+
+        self.assertEqual(written, [termios.TIOCM_DTR])
+
+    async def test_set_modem_lines_ignores_enotty(self) -> None:
+        """
+        Test that _set_modem_lines ignores ENOTTY from TIOCMGET:
+        """
+        with unittest.mock.patch(
+            "samps.asynchronous.ioctl", side_effect=OSError(ENOTTY, "not a tty")
+        ) as ioctl:
+            self.serial._set_modem_lines(dtr=True, rts=False)
+
+        ioctl.assert_called_once()
+        self.assertEqual(ioctl.call_args.args[1], termios.TIOCMGET)
 
     async def test_close_idempotent(self) -> None:
         """

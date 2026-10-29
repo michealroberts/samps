@@ -8,7 +8,10 @@
 import asyncio
 import os
 import termios
-from errno import EAGAIN, EINTR, EWOULDBLOCK
+from errno import EAGAIN, EINTR, ENOTTY, EWOULDBLOCK
+from fcntl import ioctl
+from os import isatty
+from struct import pack, unpack
 from termios import (
     CLOCAL,
     CREAD,
@@ -41,6 +44,10 @@ from termios import (
     PARENB,
     PARODD,
     TCSANOW,
+    TIOCM_DTR,
+    TIOCM_RTS,
+    TIOCMGET,
+    TIOCMSET,
     VMIN,
     VTIME,
     tcdrain,
@@ -303,6 +310,58 @@ class SerialAsyncCommonInterface:
             tty_attributes,
         )
 
+    def _set_modem_lines(self, dtr: bool = True, rts: bool = False) -> None:
+        """
+        Apply DTR and RTS modem control lines.
+
+        Args:
+            dtr: Whether to set (True) or clear (False) the DTR line.
+            rts: Whether to set (True) or clear (False) the RTS line.
+
+        Raises:
+            RuntimeError: If the file descriptor is not available.
+
+        Note:
+            This method silently returns if the device is not a TTY or does not
+            support modem control ioctls (ENOTTY).
+        """
+        if self._fd is None:
+            raise RuntimeError("File descriptor is not available.")
+
+        if not isatty(self._fd):
+            return
+
+        # Pack an unsigned int buffer to hold the modem bits:
+        buffer = pack("I", 0)
+
+        # Get the current modem bits; ignore if device does not support this ioctl:
+        try:
+            buffer = ioctl(self._fd, TIOCMGET, buffer)
+        except OSError as error:
+            if error.errno == ENOTTY:
+                # PTYs and some drivers do not support modem control; just skip.
+                return
+            raise
+
+        # Unpack the bits from the buffer:
+        (bits,) = unpack("I", buffer)
+
+        # If DTR is requested, set or clear the bit:
+        if dtr:
+            bits |= TIOCM_DTR
+        else:
+            bits &= ~TIOCM_DTR
+
+        # If RTS is requested, set or clear the bit:
+        if rts:
+            bits |= TIOCM_RTS
+        else:
+            bits &= ~TIOCM_RTS
+
+        buffer = pack("I", bits)
+
+        ioctl(self._fd, TIOCMSET, buffer)
+
     async def _wait_until_readable(self, timer: ReadTimeoutHandler) -> None:
         """
         Wait, without blocking the event loop, until the serial port has data to read
@@ -376,6 +435,12 @@ class SerialAsyncCommonInterface:
             # Configure the TTY settings using the provided attributes off-loop:
             await self._loop.run_in_executor(
                 None, self._configure_tty_settings, attributes
+            )
+
+            # After configuring termios, set the modem control lines off-loop (DTR is
+            # always set, RTS only when hardware flow control is enabled):
+            await self._loop.run_in_executor(
+                None, self._set_modem_lines, True, self._rtscts
             )
 
             # Switch the file descriptor back to non-blocking mode so reads honor termios VMIN/VTIME settings:
