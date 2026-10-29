@@ -12,6 +12,7 @@ from struct import pack
 from types import TracebackType
 from typing import Optional, Type, TypedDict
 
+from .base import BaseInterface
 from .errors import SerialReadError, SerialWriteError
 from .utilities import no_op
 
@@ -58,7 +59,7 @@ default_tmc_parameters: USBTMCCommonInterfaceParameters = (
 # **************************************************************************************
 
 
-class USBTMCCommonInterface:
+class USBTMCCommonInterface(BaseInterface):
     """
     This class provides a common interface for tmc over USB communication.
     """

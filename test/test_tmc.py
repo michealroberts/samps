@@ -12,6 +12,7 @@ import unittest.mock
 from errno import EINVAL, EIO
 
 from samps import (
+    BaseInterface,
     SerialReadError,
     SerialWriteError,
     USBTMCCommonInterface,
@@ -70,6 +71,14 @@ class TestTMCCommonInterface(unittest.TestCase):
         ) as serial_context:
             self.assertTrue(serial_context.is_open())
         self.assertFalse(serial_context.is_open())
+
+    def test_is_base_interface(self) -> None:
+        """
+        Test that USBTMCCommonInterface explicitly subclasses the BaseInterface protocol:
+        """
+        self.assertIn(BaseInterface, USBTMCCommonInterface.__mro__)
+        self.assertTrue(issubclass(USBTMCCommonInterface, BaseInterface))
+        self.assertIsInstance(self.serial, BaseInterface)
 
     def test_is_open_and_is_closed(self) -> None:
         """
