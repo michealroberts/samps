@@ -408,18 +408,23 @@ class SerialCommonInterface(BaseInterface):
 
         self._fd = fd
 
-        # Get the raw TTY termios attributes for the file descriptor:
-        attributes = self._get_termios_attributes()
+        try:
+            # Get the raw TTY termios attributes for the file descriptor:
+            attributes = self._get_termios_attributes()
 
-        # Configure the TTY settings using the provided attributes:
-        self._configure_tty_settings(attributes)
+            # Configure the TTY settings using the provided attributes:
+            self._configure_tty_settings(attributes)
 
-        # After configuring termios, set the modem control lines:
-        self._set_modem_lines(dtr=True, rts=True if self._rtscts else False)
+            # After configuring termios, set the modem control lines:
+            self._set_modem_lines(dtr=True, rts=True if self._rtscts else False)
 
-        # Switch the file descriptor back to blocking mode so reads honor termios
-        # VMIN/VTIME settings:
-        os.set_blocking(fd, True)
+            # Switch the file descriptor back to blocking mode so reads honor termios
+            # VMIN/VTIME settings:
+            os.set_blocking(fd, True)
+        except Exception:
+            # Release the file descriptor and mark the port closed, then re-raise:
+            self.close()
+            raise
 
         # Finally, set the serial port to open:
         self._is_open = True

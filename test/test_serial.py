@@ -330,6 +330,36 @@ class TestSerialCommonInterface(unittest.TestCase):
         self.assertEqual(serial2.parity, "N")
         serial2.close()
 
+    def test_open_releases_file_descriptor_when_configure_fails(self) -> None:
+        """
+        Test that open closes the file descriptor and is not open if the port is not a TTY:
+        """
+        # Used to capture the file descriptor opened by open():
+        original_open = os.open
+        opened: list[int] = []
+
+        def fake_open(path: str, flags: int) -> int:
+            fd = original_open(path, flags)
+            opened.append(fd)
+            return fd
+
+        serial = SerialCommonInterface(
+            port="/dev/null",
+            baudrate=9600,
+        )
+
+        with unittest.mock.patch("os.open", new=fake_open):
+            with self.assertRaises(termios.error):
+                serial.open()
+
+        self.assertFalse(serial.is_open())
+        self.assertIsNone(serial._fd)
+        self.assertEqual(len(opened), 1)
+
+        # The file descriptor opened by open() must have been closed:
+        with self.assertRaises(OSError):
+            os.fstat(opened[0])
+
     def test_read_nontransient_error_raises(self) -> None:
         """
         Test that a non-transient OSError in read is wrapped in SerialReadError:
