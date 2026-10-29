@@ -49,7 +49,7 @@ jobs:
 
       - name: Static Analysis w/mypy
         run: |
-          uv run mypy ./src/samps --config mypy.ini
+          uv run mypy ./src/samps ./test --config mypy.ini
 
       - name: Build w/Hatch Build Backend 🔧
         run: |
