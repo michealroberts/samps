@@ -67,7 +67,7 @@ class USBTMCCommonInterface(BaseInterface):
     # The default port for the USBTMC communication is set to "/dev/usbtmc0":
     _port: str = "/dev/usbtmc0"
 
-    # DEFAULT_TIMEOUT (non-blocking mode with select, in seconds):
+    # The I/O timeout applied by the kernel driver to each read and write (in seconds):
     _timeout: float = DEFAULT_TIMEOUT
 
     # The default file descriptor for the USBTMC connection is set to None:
@@ -100,7 +100,7 @@ class USBTMCCommonInterface(BaseInterface):
 
     def open(self) -> None:
         """
-        Open the USBTMC device for communication (non-blocking file descriptor).
+        Open the USBTMC device for communication (blocking file descriptor).
 
         Raises:
             SerialReadError: If opening the device fails.
@@ -116,7 +116,7 @@ class USBTMCCommonInterface(BaseInterface):
 
         self._fd = fd
 
-        # Finally, set the USBTMC device to open:
+        # Mark the USBTMC device as open before applying the timeout:
         self._is_open = True
 
         try:
@@ -156,7 +156,7 @@ class USBTMCCommonInterface(BaseInterface):
             RuntimeError: If the port is not open.
             SerialReadError: On timeout or read errors.
         """
-        # Check if the file descriptor is a valid integer:
+        # Ensure that the USBTMC device is open:
         if not self.is_open():
             raise RuntimeError(
                 "Port must be configured and open before it can be used."
@@ -181,7 +181,7 @@ class USBTMCCommonInterface(BaseInterface):
         except OSError as e:
             raise SerialReadError(f"Reading from USBTMC device failed: {e}") from e
 
-        # If the port was ready but returned no data, treat it as a disconnection.
+        # If the read returned no data, treat it as a disconnection:
         if not data:
             raise SerialReadError(
                 "The device reported readiness to read but returned no data."
@@ -193,9 +193,9 @@ class USBTMCCommonInterface(BaseInterface):
         """
         Read up to and including the next `eol` byte (default b'\n'),
         or until `maximum_bytes` bytes have been read (if > 0),
-        honoring self._timeout for the entire line.
+        with each device read bounded by the driver timeout.
         """
-        # Check if the file descriptor is a valid integer:
+        # Ensure that the USBTMC device is open:
         if not self.is_open():
             raise RuntimeError(
                 "Port must be configured and open before it can be used."
@@ -212,7 +212,7 @@ class USBTMCCommonInterface(BaseInterface):
         chunk_size = 1024
 
         while True:
-            # Check if we have read enough bytes to satisfy max_bytes:
+            # Check if we have read enough bytes to satisfy maximum_bytes:
             if maximum_bytes > 0 and len(read) >= maximum_bytes:
                 # We have reached the maximum allowed bytes; return what we have:
                 return bytes(read)
@@ -324,10 +324,7 @@ class USBTMCCommonInterface(BaseInterface):
 
     def flush(self) -> None:
         """
-        Block until all written output has been transmitted to the device.
-
-        Raises:
-            RuntimeError: If the port is not open.
+        No-op for USBTMC, as there is no termios output queue to drain.
         """
         # No-op for USBTMC (no termios drain):
         return no_op()
@@ -459,7 +456,7 @@ class USBTMCCommonInterface(BaseInterface):
             # set timeout (milliseconds) in the driver:
             ioctl(self._fd, IOCTL_SET_TIMEOUT, pack("I", timeout_ms))
         except OSError as e:
-            # Raise a friendlier error if the ioctl is not supported:
+            # Silently ignore the error if the ioctl is not supported (e.g., on a PTY):
             if e.errno in (ENOTTY, EINVAL):
                 return
             raise RuntimeError(f"Setting USBTMC timeout failed: {e}") from e
@@ -469,7 +466,7 @@ class USBTMCCommonInterface(BaseInterface):
         Context manager entry: opens the USBTMC device.
 
         Returns:
-            The TMCCommonInterface instance.
+            The USBTMCCommonInterface instance.
         """
         self.open()
         return self
