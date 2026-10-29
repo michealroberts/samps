@@ -111,6 +111,9 @@ class SerialAsyncCommonInterface:
     # Whether the serial port is open or not:
     _is_open: bool = False
 
+    # The bytes read from the serial port but not yet returned to the caller:
+    _buffer: bytearray
+
     def __init__(
         self,
         port: str,
@@ -157,6 +160,9 @@ class SerialAsyncCommonInterface:
         self._xonxoff = params.get("xonxoff", False)
 
         self._rtscts = params.get("rtscts", False)
+
+        # Initialize an empty buffer for bytes read beyond a requested eol marker:
+        self._buffer = bytearray()
 
         self._loop = asyncio.get_running_loop()
 
@@ -387,6 +393,9 @@ class SerialAsyncCommonInterface:
         self._fd = None
         self._is_open = False
 
+        # Discard any bytes retained by a previous readline:
+        self._buffer.clear()
+
     async def read(self, size: int = 1) -> bytes:
         """
         Read up to `size` bytes from the serial port, respecting the configured timeout.
@@ -413,6 +422,10 @@ class SerialAsyncCommonInterface:
 
         # Initialize a bytearray to accumulate incoming data:
         read: bytearray = bytearray()
+
+        # Consume any bytes retained by a previous readline before reading the port:
+        read.extend(self._buffer[:size])
+        del self._buffer[:size]
 
         # Convert timeout from seconds to milliseconds, as required by ReadTimeoutHandler:
         timer = ReadTimeoutHandler(timeout=self._timeout * 1000)
@@ -497,19 +510,24 @@ class SerialAsyncCommonInterface:
             if maximum_bytes > 0:
                 chunk_size = min(chunk_size, maximum_bytes - len(read))
 
-            try:
-                chunk: bytes = os.read(self._fd, chunk_size)
-            except OSError as e:
-                # Retry on non-fatal errors and propagate others upwards:
-                if e.errno in (
-                    EAGAIN,
-                    EWOULDBLOCK,
-                    EINTR,
-                ):
-                    # Wait until the port has data, without blocking the event loop:
-                    await self._wait_until_readable(timer)
-                    continue
-                raise SerialReadError(f"Reading from serial port failed: {e}")
+            # Consume any bytes retained by a previous readline before reading the port:
+            if self._buffer:
+                chunk: bytes = bytes(self._buffer[:chunk_size])
+                del self._buffer[:chunk_size]
+            else:
+                try:
+                    chunk = os.read(self._fd, chunk_size)
+                except OSError as e:
+                    # Retry on non-fatal errors and propagate others upwards:
+                    if e.errno in (
+                        EAGAIN,
+                        EWOULDBLOCK,
+                        EINTR,
+                    ):
+                        # Wait until the port has data, without blocking the event loop:
+                        await self._wait_until_readable(timer)
+                        continue
+                    raise SerialReadError(f"Reading from serial port failed: {e}")
 
             # Keep waiting for more bytes and do NOT treat as a disconnect, without
             # blocking the event loop:
@@ -523,6 +541,8 @@ class SerialAsyncCommonInterface:
                 # Find the index position of the marker and append up to and including it:
                 index = chunk.index(eol) + len(eol)
                 read.extend(chunk[:index])
+                # Retain any bytes after the marker, ahead of any already retained bytes:
+                self._buffer[:0] = chunk[index:]
                 break
 
             # Otherwise, append the entire chunk
