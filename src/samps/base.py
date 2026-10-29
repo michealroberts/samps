@@ -202,3 +202,199 @@ class BaseInterface(Protocol):
 
 
 # **************************************************************************************
+
+
+@runtime_checkable
+class BaseAsyncInterface(Protocol):
+    """
+    Protocol defining the interface for all asynchronous base transport classes.
+
+    All implementations must provide all methods with identical signatures.
+
+    Unsupported operations should log a warning and return gracefully.
+    """
+
+    async def open(self) -> None:
+        """
+        Asynchronously open the connection to the device.
+
+        Raises:
+            Exception: If opening the connection fails.
+        """
+        ...
+
+    async def close(self) -> None:
+        """
+        Asynchronously close the connection to the device if it is open.
+        """
+        ...
+
+    async def read(self, size: int = 1) -> bytes:
+        """
+        Asynchronously read up to `size` bytes from the device.
+
+        Args:
+            size: Number of bytes to read (default: 1).
+
+        Returns:
+            A bytes object containing the data read.
+
+        Raises:
+            RuntimeError: If the connection is not open.
+            Exception: On timeout or read errors.
+        """
+        ...
+
+    async def write(self, data: bytes) -> int:
+        """
+        Asynchronously write all of `data` to the device.
+
+        Args:
+            data: Bytes to write.
+
+        Returns:
+            The total number of bytes successfully written.
+
+        Raises:
+            RuntimeError: If the connection is not open.
+            Exception: On write failure.
+        """
+        ...
+
+    async def readline(
+        self,
+        eol: bytes = b"\n",
+        maximum_bytes: int = -1,
+    ) -> bytes:
+        """
+        Asynchronously read up to and including the next `eol` byte sequence.
+
+        Args:
+            eol: End-of-line marker to read until (default: b'\\n').
+            maximum_bytes: Maximum bytes to read (-1 for no limit).
+
+        Returns:
+            A bytes object containing the line read, including the EOL marker.
+
+        Raises:
+            RuntimeError: If the connection is not open.
+            Exception: On timeout or read errors.
+        """
+        ...
+
+    async def ask(
+        self,
+        data: bytes,
+        eol: bytes = b"\n",
+        maximum_bytes: int = -1,
+    ) -> bytes:
+        """
+        Asynchronously write `data` to the device and read a response line ending
+        with `eol`.
+
+        Args:
+            data: Bytes to write as the query.
+            eol: End-of-line marker for the response (default: b'\\n').
+            maximum_bytes: Maximum bytes to read in response (-1 for no limit).
+
+        Returns:
+            The response bytes read from the device.
+
+        Raises:
+            RuntimeError: If the connection is not open.
+            Exception: On write or read failure.
+        """
+        ...
+
+    async def flush(self) -> None:
+        """
+        Asynchronously wait until all written output has been transmitted to the
+        device.
+
+        Raises:
+            RuntimeError: If the connection is not open.
+        """
+        ...
+
+    async def abort_in(self) -> None:
+        """
+        Asynchronously discard any data waiting in the input buffer.
+
+        Raises:
+            RuntimeError: If the connection is not open.
+        """
+        ...
+
+    async def abort_out(self) -> None:
+        """
+        Asynchronously discard any data waiting in the output buffer.
+
+        Raises:
+            RuntimeError: If the connection is not open.
+        """
+        ...
+
+    async def clear(self) -> None:
+        """
+        Asynchronously clear the device by aborting all pending transfers and
+        resetting I/O buffers.
+
+        Raises:
+            RuntimeError: If the connection is not open.
+        """
+        ...
+
+    def is_open(self) -> bool:
+        """
+        Check whether the connection is currently open.
+
+        Returns:
+            True if open, False otherwise.
+        """
+        ...
+
+    def is_closed(self) -> bool:
+        """
+        Check whether the connection is currently closed.
+
+        Returns:
+            True if closed, False otherwise.
+        """
+        ...
+
+    async def __aenter__(self) -> "BaseAsyncInterface":
+        """
+        Asynchronous context manager entry: opens the connection.
+
+        Returns:
+            The BaseAsyncInterface instance.
+        """
+        ...
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        """
+        Asynchronous context manager exit: closes the connection.
+
+        Args:
+            exc_type: The exception type, if an exception was raised.
+            exc_val: The exception instance, if an exception was raised.
+            exc_tb: The traceback, if an exception was raised.
+        """
+        ...
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the interface.
+
+        Returns:
+            A human-readable string describing the interface.
+        """
+        ...
+
+
+# **************************************************************************************
