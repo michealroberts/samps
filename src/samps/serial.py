@@ -445,17 +445,19 @@ class SerialCommonInterface(BaseInterface):
 
     def read(self, size: int = 1) -> bytes:
         """
-        Read up to `size` bytes from the serial port, respecting the configured timeout.
+        Read exactly `size` bytes from the serial port, respecting the configured
+        timeout. Any bytes retained from a previous `readline` are returned first.
 
         Args:
             size: Number of bytes to read (default: 1).
 
         Returns:
-            A bytes object containing the data read.
+            A bytes object containing exactly `size` bytes.
 
         Raises:
             RuntimeError: If the port is not open.
-            SerialReadError: On timeout or read errors.
+            SerialReadError: If `size` bytes do not arrive before the timeout
+                expires, or on read errors.
         """
         # Check if the file descriptor is a valid integer:
         if not self.is_open():
