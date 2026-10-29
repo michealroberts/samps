@@ -54,11 +54,11 @@ from .baudrate import BAUDRATE_LOOKUP_FLAGS, BaudrateType
 from .common import (
     DEFAULT_TIMEOUT,
     SerialCommonInterfaceParameters,
-    TTYAttributes,
     default_serial_parameters,
 )
 from .errors import SerialReadError, SerialWriteError
 from .handlers import ReadTimeoutHandler
+from .tty import TTYAttributes
 
 # **************************************************************************************
 
