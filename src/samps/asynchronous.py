@@ -781,9 +781,11 @@ class SerialAsyncCommonInterface:
         Return a string representation of the interface.
 
         Returns:
-            A string in the form: SerialCommonInterface(port=<port>, baudrate=<baudrate>).
+            A string in the form: SerialAsyncCommonInterface(port=<port>, baudrate=<baudrate>).
         """
-        return f"SerialCommonInterface(port={self._port}, baudrate={self._baudrate})"
+        return (
+            f"SerialAsyncCommonInterface(port={self._port}, baudrate={self._baudrate})"
+        )
 
 
 # **************************************************************************************

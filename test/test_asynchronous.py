@@ -99,6 +99,13 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         self.assertIn(self.slave_device_name, representation)
         self.assertIn("9600", representation)
 
+    async def test_repr_uses_async_class_name(self) -> None:
+        """
+        Test that __repr__ names the asynchronous interface class:
+        """
+        representation = repr(self.serial)
+        self.assertTrue(representation.startswith("SerialAsyncCommonInterface("))
+
     async def test_write_and_read_through_pty(self) -> None:
         """
         Test writing to the slave is readable from the master and vice versa:
