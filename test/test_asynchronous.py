@@ -430,6 +430,37 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
 
         self.assertGreater(ticks, 0)
 
+    async def test_abort_in_discards_bytes_retained_by_readline(self) -> None:
+        """
+        Test that abort_in discards bytes retained after the eol marker by readline:
+        """
+        os.write(self.master_file_descriptor, b"first\nsecond\n")
+
+        self.assertEqual(await self.serial.readline(), b"first\n")
+        await self.serial.abort_in()
+
+        with self.assertRaises(SerialReadError):
+            await self.serial.readline()
+
+    async def test_abort_in_discards_pending_input(self) -> None:
+        """
+        Test that abort_in discards input pending in the kernel buffer:
+        """
+        os.write(self.master_file_descriptor, b"pending")
+
+        await self.serial.abort_in()
+
+        with self.assertRaises(SerialReadError):
+            await self.serial.read(1)
+
+    async def test_abort_in_raises_when_closed(self) -> None:
+        """
+        Test that abort_in raises when the port is closed:
+        """
+        await self.serial.close()
+        with self.assertRaises(RuntimeError):
+            await self.serial.abort_in()
+
     async def test_property_setters_apply_settings(self) -> None:
         """
         Test that setting bytesize and parity updates internal state:
