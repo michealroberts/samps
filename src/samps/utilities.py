@@ -56,16 +56,16 @@ def hex_to_int(value: Tuple[int, int, int]) -> int:
         Integer in [0, 16777215].
 
     Raises:
-        TypeError: If value is not a 3-tuple of ints.
+        TypeError: If value is not a 3-tuple of ints (bools are rejected).
         ValueError: If any byte is out of range.
     """
-    # Validate the input type:
+    # Validate the input type (bools are rejected):
     if not (
         isinstance(value, tuple)
         and len(value) == 3
-        and all(isinstance(b, int) for b in value)
+        and all(isinstance(b, int) and not isinstance(b, bool) for b in value)
     ):
-        raise TypeError("value must be a tuple of three integers")
+        raise TypeError("value must be a tuple of three integers (bool is not allowed)")
 
     # Validate each byte's range:
     for b in value:
