@@ -45,6 +45,7 @@ from termios import (
     PARMRK,
     PARODD,
     TCIFLUSH,
+    TCIOFLUSH,
     TCOFLUSH,
     TCSANOW,
     TIOCM_DTR,
@@ -767,6 +768,33 @@ class SerialAsyncCommonInterface:
         # Only meaningful for TTYs; if not a TTY (very rare for “serial”), treat as no-op:
         try:
             tcflush(self._fd, TCOFLUSH) if os.isatty(self._fd) else no_op()
+        except OSError:
+            # Some exotic drivers may not support tcflush; ignore these errors:
+            pass
+
+    async def clear(self) -> None:
+        """
+        Clear the device (abort all pending transfers, reset the I/O pipes etc).
+
+        Raises:
+            RuntimeError: If the port is not open.
+        """
+        # Check if the file descriptor is a valid integer:
+        if not self.is_open():
+            raise RuntimeError(
+                "Port must be configured and open before it can be used."
+            )
+
+        # This is needed for type narrowing the file descriptor:
+        if self._fd is None:
+            raise RuntimeError("File descriptor is not available.")
+
+        # Discard any bytes retained by a previous readline:
+        self._buffer.clear()
+
+        # Only meaningful for TTYs; if not a TTY (very rare for “serial”), treat as no-op:
+        try:
+            tcflush(self._fd, TCIOFLUSH) if os.isatty(self._fd) else no_op()
         except OSError:
             # Some exotic drivers may not support tcflush; ignore these errors:
             pass

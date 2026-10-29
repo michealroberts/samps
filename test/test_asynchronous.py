@@ -489,6 +489,35 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(RuntimeError):
             await self.serial.abort_out()
 
+    async def test_clear_discards_bytes_retained_by_readline(self) -> None:
+        """
+        Test that clear discards bytes retained after the eol marker by readline:
+        """
+        os.write(self.master_file_descriptor, b"first\nsecond\n")
+
+        self.assertEqual(await self.serial.readline(), b"first\n")
+        await self.serial.clear()
+
+        with self.assertRaises(SerialReadError):
+            await self.serial.readline()
+
+    async def test_clear_flushes_input_and_output(self) -> None:
+        """
+        Test that clear calls tcflush with TCIOFLUSH on the port file descriptor:
+        """
+        with unittest.mock.patch("samps.asynchronous.tcflush") as mock_tcflush:
+            await self.serial.clear()
+
+        mock_tcflush.assert_called_once_with(self.serial._fd, termios.TCIOFLUSH)
+
+    async def test_clear_raises_when_closed(self) -> None:
+        """
+        Test that clear raises when the port is closed:
+        """
+        await self.serial.close()
+        with self.assertRaises(RuntimeError):
+            await self.serial.clear()
+
     async def test_property_setters_apply_settings(self) -> None:
         """
         Test that setting bytesize and parity updates internal state:
