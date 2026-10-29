@@ -8,6 +8,7 @@
 import asyncio
 import os
 import termios
+import threading
 import time
 import unittest
 import unittest.mock
@@ -164,10 +165,28 @@ class TestSerialCommonInterface(unittest.TestCase):
 
         os.write(self.master_file_descriptor, reply)
 
+        written_back: list[bytes] = []
+
+        # On macOS, tcdrain on a pty slave blocks until the master side reads the
+        # output, so the query must be drained from the master concurrently:
+        def drain() -> None:
+            data = b""
+            while len(data) < len(query):
+                chunk = os.read(self.master_file_descriptor, len(query) - len(data))
+                if not chunk:
+                    break
+                data += chunk
+            written_back.append(data)
+
+        reader = threading.Thread(target=drain, daemon=True)
+        reader.start()
+
         response = self.serial.ask(query)
+        reader.join(timeout=2.0)
+
+        self.assertFalse(reader.is_alive())
         self.assertEqual(response, reply)
-        written_back = os.read(self.master_file_descriptor, len(query))
-        self.assertEqual(written_back, query)
+        self.assertEqual(written_back, [query])
 
     def test_readline_retains_bytes_after_eol(self) -> None:
         """
