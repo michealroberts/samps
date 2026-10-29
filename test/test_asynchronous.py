@@ -173,6 +173,20 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         self.assertGreaterEqual(time.time() - start_time, 0.1)
         await short_serial.close()
 
+    async def test_read_retries_on_empty_read(self) -> None:
+        """
+        Test that read keeps waiting for data when the port returns no bytes:
+        """
+        with unittest.mock.patch("os.read", side_effect=[b"", b"x"]):
+            self.assertEqual(await self.serial.read(1), b"x")
+
+    async def test_readline_retries_on_empty_read(self) -> None:
+        """
+        Test that readline keeps waiting for data when the port returns no bytes:
+        """
+        with unittest.mock.patch("os.read", side_effect=[b"", b"hello\n"]):
+            self.assertEqual(await self.serial.readline(), b"hello\n")
+
     async def test_constructor_without_params_uses_defaults(self) -> None:
         """
         Test that omitting params falls back to the default parameters:
