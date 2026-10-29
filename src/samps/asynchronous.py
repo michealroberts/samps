@@ -42,6 +42,7 @@ from termios import (
     ONLCR,
     OPOST,
     PARENB,
+    PARMRK,
     PARODD,
     TCSANOW,
     TIOCM_DTR,
@@ -225,7 +226,9 @@ class SerialAsyncCommonInterface:
         attributes["oflag"] &= ~(OPOST | ONLCR | OCRNL)
 
         # Disable input transformations and parity checking:
-        attributes["iflag"] &= ~(INLCR | IGNCR | ICRNL | IGNBRK | INPCK | ISTRIP)
+        attributes["iflag"] &= ~(
+            INLCR | IGNCR | ICRNL | IGNBRK | INPCK | ISTRIP | PARMRK
+        )
 
         attributes["cflag"] &= ~CSIZE
 

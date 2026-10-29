@@ -412,6 +412,26 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
                 self.serial.set_parity(parity_value)
                 self.assertEqual(self.serial.parity, parity_value)
 
+    async def test_open_clears_parmrk(self) -> None:
+        """
+        Test that open clears PARMRK so parity errors do not insert marker bytes:
+        """
+        attributes = termios.tcgetattr(self.slave_file_descriptor)
+        attributes[0] |= termios.PARMRK
+        termios.tcsetattr(self.slave_file_descriptor, termios.TCSANOW, attributes)
+
+        serial = SerialCommonInterface(
+            port=self.slave_device_name,
+            baudrate=9600,
+        )
+        await serial.open()
+
+        try:
+            iflag = termios.tcgetattr(self.slave_file_descriptor)[0]
+            self.assertEqual(iflag & termios.PARMRK, 0)
+        finally:
+            await serial.close()
+
     async def test_baudrate_setter(self) -> None:
         """
         Test that setting baudrate updates internal state without error:
