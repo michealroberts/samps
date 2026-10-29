@@ -75,6 +75,9 @@ class USBTMCCommonInterface:
     # Whether the USBTMC port is open or not:
     _is_open: bool = False
 
+    # The bytes read from the USBTMC device but not yet returned to the caller:
+    _buffer: bytearray
+
     def __init__(
         self,
         port: str,
@@ -90,6 +93,9 @@ class USBTMCCommonInterface:
 
         # Initialize the timeout handler with the provided timeout value:
         self._timeout = DEFAULT_TIMEOUT if timeout is None else timeout
+
+        # Initialize an empty buffer for bytes read beyond a requested eol marker:
+        self._buffer = bytearray()
 
     def open(self) -> None:
         """
@@ -131,6 +137,9 @@ class USBTMCCommonInterface:
         self._fd = None
         self._is_open = False
 
+        # Discard any bytes retained by a previous readline:
+        self._buffer.clear()
+
     def read(self, size: int = 1) -> bytes:
         """
         Read up to `size` bytes from the USBTMC device, respecting the configured
@@ -158,6 +167,12 @@ class USBTMCCommonInterface:
 
         if size == 0:
             return b""
+
+        # Return any bytes retained by a previous readline before reading the device:
+        if self._buffer:
+            retained = bytes(self._buffer[:size])
+            del self._buffer[:size]
+            return retained
 
         try:
             # Blocking read call to read from the USBTMC device:
@@ -212,11 +227,18 @@ class USBTMCCommonInterface:
                 # Adjust chunk size to not exceed maximum_bytes:
                 chunk_size = min(1024, remaining)
 
-            try:
-                # Blocking read call to read from the USBTMC device:
-                chunk: bytes = os.read(self._fd, chunk_size)
-            except OSError as e:
-                raise SerialReadError(f"Reading from USBTMC device failed: {e}") from e
+            # Consume any bytes retained by a previous readline before reading the device:
+            if self._buffer:
+                chunk: bytes = bytes(self._buffer[:chunk_size])
+                del self._buffer[:chunk_size]
+            else:
+                try:
+                    # Blocking read call to read from the USBTMC device:
+                    chunk = os.read(self._fd, chunk_size)
+                except OSError as e:
+                    raise SerialReadError(
+                        f"Reading from USBTMC device failed: {e}"
+                    ) from e
 
             # If the port returned no data at all:
             if not chunk:
@@ -233,6 +255,8 @@ class USBTMCCommonInterface:
             # Process the buffer by checking if the end-of-line marker is within it:
             if eol in read:
                 index = read.index(eol) + len(eol)
+                # Retain any bytes after the marker, ahead of any already retained bytes:
+                self._buffer[:0] = read[index:]
                 return bytes(read[:index])
 
     def write(self, data: bytes) -> int:
@@ -314,6 +338,9 @@ class USBTMCCommonInterface:
         if self._fd is None:
             raise RuntimeError("File descriptor is not available.")
 
+        # Discard any bytes retained by a previous readline:
+        self._buffer.clear()
+
         try:
             ioctl(self._fd, IOCTL_ABORT_BULK_IN)
         except OSError as e:
@@ -350,6 +377,9 @@ class USBTMCCommonInterface:
         """
         if self._fd is None:
             raise RuntimeError("File descriptor is not available.")
+
+        # Discard any bytes retained by a previous readline:
+        self._buffer.clear()
 
         try:
             ioctl(self._fd, IOCTL_CLEAR)

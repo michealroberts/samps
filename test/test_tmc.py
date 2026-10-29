@@ -133,6 +133,24 @@ class TestTMCCommonInterface(unittest.TestCase):
         written_back = os.read(self.master_file_descriptor, len(query))
         self.assertEqual(written_back, query)
 
+    def test_readline_retains_bytes_after_eol(self) -> None:
+        """
+        Test that bytes after the eol marker are retained for the next readline:
+        """
+        os.write(self.master_file_descriptor, b"first\nsecond\n")
+
+        self.assertEqual(self.serial.readline(), b"first\n")
+        self.assertEqual(self.serial.readline(), b"second\n")
+
+    def test_read_returns_bytes_retained_by_readline(self) -> None:
+        """
+        Test that read returns bytes retained after the eol marker by readline:
+        """
+        os.write(self.master_file_descriptor, b"line\nXY")
+
+        self.assertEqual(self.serial.readline(), b"line\n")
+        self.assertEqual(self.serial.read(2), b"XY")
+
     def test_read_zero_length(self) -> None:
         """
         Test that reading zero bytes returns an empty bytes object:
