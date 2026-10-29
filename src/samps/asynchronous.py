@@ -535,18 +535,18 @@ class SerialAsyncCommonInterface:
                 await self._wait_until_readable(timer)
                 continue
 
-            # If the chunk read was successful, process it by checking if the end-of-line
-            # marker is within this chunk
-            if eol in chunk:
-                # Find the index position of the marker and append up to and including it:
-                index = chunk.index(eol) + len(eol)
-                read.extend(chunk[:index])
-                # Retain any bytes after the marker, ahead of any already retained bytes:
-                self._buffer[:0] = chunk[index:]
-                break
-
-            # Otherwise, append the entire chunk
+            # If the chunk read was successful, append it to the data:
             read.extend(chunk)
+
+            # Check the data read so far for the end-of-line marker, as the marker may
+            # be split across chunks:
+            if eol in read:
+                # Find the index position of the marker, up to and including it:
+                index = read.index(eol) + len(eol)
+                # Retain any bytes after the marker, ahead of any already retained bytes:
+                self._buffer[:0] = read[index:]
+                del read[index:]
+                break
 
         # Finally, return the accumulated data:
         return bytes(read)

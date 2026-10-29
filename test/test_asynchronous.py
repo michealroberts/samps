@@ -123,6 +123,15 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.serial.readline(), b"first\n")
         self.assertEqual(await self.serial.readline(), b"second\n")
 
+    async def test_readline_matches_eol_split_across_reads(self) -> None:
+        """
+        Test that readline matches an eol marker split across two reads:
+        """
+        with unittest.mock.patch("os.read", side_effect=[b"first\r", b"\nsecond"]):
+            self.assertEqual(await self.serial.readline(eol=b"\r\n"), b"first\r\n")
+
+        self.assertEqual(await self.serial.read(6), b"second")
+
     async def test_read_returns_bytes_retained_by_readline(self) -> None:
         """
         Test that read returns bytes retained after the eol marker by readline:
