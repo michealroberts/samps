@@ -44,6 +44,7 @@ from termios import (
     PARENB,
     PARMRK,
     PARODD,
+    TCIFLUSH,
     TCSANOW,
     TIOCM_DTR,
     TIOCM_RTS,
@@ -52,6 +53,7 @@ from termios import (
     VMIN,
     VTIME,
     tcdrain,
+    tcflush,
     tcgetattr,
     tcsetattr,
 )
@@ -67,6 +69,7 @@ from .common import (
 from .errors import SerialReadError, SerialWriteError
 from .handlers import ReadTimeoutHandler
 from .tty import TTYAttributes
+from .utilities import no_op
 
 # **************************************************************************************
 
@@ -715,6 +718,33 @@ class SerialAsyncCommonInterface:
         # Wait until all output written to file descriptor fd has been
         # transmitted and drained, off-loop so the event loop is not blocked:
         await self._loop.run_in_executor(None, tcdrain, self._fd)
+
+    async def abort_in(self) -> None:
+        """
+        Discard data in the input buffer (flush the input buffer).
+
+        Raises:
+            RuntimeError: If the port is not open.
+        """
+        # Check if the file descriptor is a valid integer:
+        if not self.is_open():
+            raise RuntimeError(
+                "Port must be configured and open before it can be used."
+            )
+
+        # This is needed for type narrowing the file descriptor:
+        if self._fd is None:
+            raise RuntimeError("File descriptor is not available.")
+
+        # Discard any bytes retained by a previous readline:
+        self._buffer.clear()
+
+        # Only meaningful for TTYs; if not a TTY (very rare for “serial”), treat as no-op:
+        try:
+            tcflush(self._fd, TCIFLUSH) if os.isatty(self._fd) else no_op()
+        except OSError:
+            # Some exotic drivers may not support tcflush; ignore these errors:
+            pass
 
     def is_open(self) -> bool:
         """
