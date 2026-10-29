@@ -9,7 +9,7 @@ import os
 import tty
 import unittest
 import unittest.mock
-from errno import EINVAL
+from errno import EINVAL, EIO
 
 from samps import (
     SerialReadError,
@@ -181,6 +181,35 @@ class TestTMCCommonInterface(unittest.TestCase):
         serial.open()
         self.assertTrue(serial.is_open())
         serial.close()
+
+    def test_open_releases_file_descriptor_when_set_timeout_fails(self) -> None:
+        """
+        Test that open closes the file descriptor and is not open if set_timeout fails:
+        """
+        # Used to capture the file descriptor opened by open():
+        original_open = os.open
+        opened: list[int] = []
+
+        def fake_open(path: str, flags: int) -> int:
+            fd = original_open(path, flags)
+            opened.append(fd)
+            return fd
+
+        serial = USBTMCCommonInterface(
+            port=self.slave_device_name,
+        )
+
+        with unittest.mock.patch("os.open", new=fake_open):
+            with unittest.mock.patch("samps.tmc.ioctl", side_effect=OSError(EIO, "io")):
+                with self.assertRaises(RuntimeError):
+                    serial.open()
+
+        self.assertFalse(serial.is_open())
+        self.assertEqual(len(opened), 1)
+
+        # The file descriptor opened by open() must have been closed:
+        with self.assertRaises(OSError):
+            os.fstat(opened[0])
 
     def test_read_nontransient_error_raises(self) -> None:
         """
