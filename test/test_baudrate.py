@@ -15,6 +15,7 @@ from samps import (
     BAUDRATE_LOOKUP_FLAGS,
     BAUDRATES,
     BaudrateType,
+    SerialAsyncCommonInterface,
     SerialCommonInterface,
 )
 
@@ -128,6 +129,24 @@ class TestSerialCommonInterfaceBaudrates(unittest.TestCase):
                 port=self.slave_device_name,
                 baudrate=12345,  # type: ignore[arg-type]
             )
+
+    def test_invalid_baudrate_error_lists_baudrates(self) -> None:
+        with self.assertRaises(ValueError) as context:
+            SerialCommonInterface(
+                port=self.slave_device_name,
+                baudrate=12345,  # type: ignore[arg-type]
+            )
+
+        self.assertIn(str(list(BAUDRATE_LOOKUP_FLAGS)), str(context.exception))
+
+    def test_async_invalid_baudrate_error_lists_baudrates(self) -> None:
+        with self.assertRaises(ValueError) as context:
+            SerialAsyncCommonInterface(
+                port=self.slave_device_name,
+                baudrate=12345,  # type: ignore[arg-type]
+            )
+
+        self.assertIn(str(list(BAUDRATE_LOOKUP_FLAGS)), str(context.exception))
 
     def test_opens_at_all_baudrates(self) -> None:
         for rate in BAUDRATE_LOOKUP_FLAGS:

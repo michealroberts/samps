@@ -51,7 +51,7 @@ from termios import (
 from types import TracebackType
 from typing import Literal, Optional, Type
 
-from .baudrate import BAUDRATE_LOOKUP_FLAGS, BAUDRATES, BaudrateType
+from .baudrate import BAUDRATE_LOOKUP_FLAGS, BaudrateType
 from .common import (
     DEFAULT_TIMEOUT,
     SerialCommonInterfaceParameters,
@@ -145,9 +145,11 @@ class SerialAsyncCommonInterface:
 
         # Ensure that the baudrate provided is valid:
         if baudrate not in BAUDRATE_LOOKUP_FLAGS.keys():
-            # If the baudrate is not in the valid list, raise a ValueError:
+            # If the baudrate is not in the valid list, raise a ValueError listing the
+            # numeric baudrates (not the termios constants, which differ on Linux):
             raise ValueError(
-                f"Invalid baudrate: {baudrate}. Valid baudrates are: {BAUDRATES}"
+                f"Invalid baudrate: {baudrate}. "
+                f"Valid baudrates are: {list(BAUDRATE_LOOKUP_FLAGS)}"
             )
 
         self._baudrate = baudrate
