@@ -8,6 +8,7 @@
 import unittest
 from typing import Tuple
 
+import samps
 from samps import __license__, __version__
 
 # **************************************************************************************
@@ -36,6 +37,10 @@ class TestBase(unittest.TestCase):
         self.assertIsInstance(major, int)
         self.assertIsInstance(minor, int)
         self.assertIsInstance(patch, int)
+
+    def test_os_name_not_exposed(self) -> None:
+        # Assert that the os.name import does not leak into the samps namespace:
+        self.assertFalse(hasattr(samps, "name"))
 
 
 # **************************************************************************************
