@@ -671,6 +671,29 @@ class SerialAsyncCommonInterface:
 
         return written
 
+    async def ask(
+        self, data: bytes, eol: bytes = b"\n", maximum_bytes: int = -1
+    ) -> bytes:
+        """
+        Ask the device by writing `data` and reading a response line ending with `eol`,
+        without blocking the event loop.
+
+        Args:
+            data: Bytes to write as the query.
+            eol: End-of-line marker for the response (default: b'\n').
+            maximum_bytes: Maximum bytes to read in response (-1 for no limit).
+
+        Returns:
+            The response bytes read from the device.
+        """
+        # Send the request bytes to the device:
+        await self.write(data)
+        # Ensure all bytes have physically left the OS driver and been transmitted
+        # to the device before we start waiting for a response:
+        await self.flush()
+        # Perform the readline operation after flushing the data bytes:
+        return await self.readline(eol, maximum_bytes)
+
     async def flush(self) -> None:
         """
         Wait, without blocking the event loop, until all written output has been

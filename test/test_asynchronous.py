@@ -200,6 +200,38 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
                 )
             self.assertEqual(received, data)
 
+    async def test_ask_through_pty(self) -> None:
+        """
+        Test the ask method for write followed by read:
+        """
+        query = b"hello-world\n"
+        reply = b"echo: hello-world\n"
+
+        os.write(self.master_file_descriptor, reply)
+
+        written_back: list[bytes] = []
+
+        # On macOS, tcdrain on a pty slave blocks until the master side reads the
+        # output, so the query must be drained from the master concurrently:
+        def drain() -> None:
+            data = b""
+            while len(data) < len(query):
+                chunk = os.read(self.master_file_descriptor, len(query) - len(data))
+                if not chunk:
+                    break
+                data += chunk
+            written_back.append(data)
+
+        reader = threading.Thread(target=drain, daemon=True)
+        reader.start()
+
+        response = await self.serial.ask(query)
+        reader.join(timeout=2.0)
+
+        self.assertFalse(reader.is_alive())
+        self.assertEqual(response, reply)
+        self.assertEqual(written_back, [query])
+
     async def test_read_timeout_raises(self) -> None:
         """
         Test that read raises a SerialReadError after the timeout expires:
