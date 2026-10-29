@@ -191,31 +191,6 @@ class BaseInterface(Protocol):
         """
         ...
 
-    async def __aenter__(self) -> "BaseInterface":
-        """
-        Asynchronous context manager entry: opens the connection.
-
-        Returns:
-            The BaseInterface instance.
-        """
-        ...
-
-    async def __aexit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
-    ) -> None:
-        """
-        Asynchronous context manager exit: closes the connection.
-
-        Args:
-            exc_type: The exception type, if an exception was raised.
-            exc_val: The exception instance, if an exception was raised.
-            exc_tb: The traceback, if an exception was raised.
-        """
-        ...
-
     def __repr__(self) -> str:
         """
         Return a string representation of the interface.
