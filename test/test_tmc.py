@@ -6,6 +6,7 @@
 # **************************************************************************************
 
 import os
+import tty
 import unittest
 import unittest.mock
 from errno import EINVAL
@@ -36,6 +37,10 @@ class TestTMCCommonInterface(unittest.TestCase):
         """
         self.master_file_descriptor, self.slave_file_descriptor = os.openpty()
         self.slave_device_name = os.ttyname(self.slave_file_descriptor)
+
+        # Put the slave end into raw mode, as a USBTMC device has no line discipline,
+        # so that the pseudo-TTY does not echo input or translate output:
+        tty.setraw(self.slave_file_descriptor)
 
         self.serial = USBTMCCommonInterface(
             port=self.slave_device_name,
@@ -115,7 +120,7 @@ class TestTMCCommonInterface(unittest.TestCase):
         Test the ask method for write followed by read:
         """
         query = b"hello-world\n"
-        reply = b"hello-world\n"
+        reply = b"echo: hello-world\n"
 
         # Write the reply from the master side so that readline() can consume it:
         os.write(self.master_file_descriptor, reply)
@@ -126,10 +131,7 @@ class TestTMCCommonInterface(unittest.TestCase):
 
         # Verify that the query was actually written out on the wire:
         written_back = os.read(self.master_file_descriptor, len(query))
-        self.assertEqual(
-            written_back.rstrip(b"\r\n"),
-            query.rstrip(b"\r\n"),
-        )
+        self.assertEqual(written_back, query)
 
     def test_read_zero_length(self) -> None:
         """
