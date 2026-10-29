@@ -16,7 +16,7 @@ from errno import EINVAL
 from typing import cast
 
 from samps import (
-    BAUDRATES,
+    BAUDRATE_LOOKUP_FLAGS,
     BaudrateType,
     SerialReadError,
     SerialWriteError,
@@ -378,10 +378,25 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         """
         Test that setting baudrate updates internal state without error:
         """
-        for raw in BAUDRATES:
+        for raw in BAUDRATE_LOOKUP_FLAGS:
             baudrate_value: BaudrateType = cast(BaudrateType, raw)
             self.serial.set_baudrate(baudrate_value)
             self.assertEqual(self.serial.baudrate, baudrate_value)
+
+    async def test_set_baudrate_rejects_invalid_baudrate(self) -> None:
+        """
+        Test that set_baudrate raises ValueError and leaves the baudrate unchanged:
+        """
+        before = termios.tcgetattr(self.slave_file_descriptor)
+
+        with self.assertRaises(ValueError):
+            self.serial.set_baudrate(12345)  # type: ignore[arg-type]
+
+        self.assertEqual(self.serial.baudrate, 9600)
+
+        after = termios.tcgetattr(self.slave_file_descriptor)
+        # The input and output speeds of the port must not have been reconfigured:
+        self.assertEqual(after[4:6], before[4:6])
 
     async def test_set_port_updates_property(self) -> None:
         """
