@@ -815,7 +815,19 @@ class SerialCommonInterface(BaseInterface):
 
         Args:
             baudrate: New baud rate (must be in BAUDRATES).
+
+        Raises:
+            ValueError: If baudrate is invalid.
         """
+        # Ensure that the baudrate provided is valid:
+        if baudrate not in BAUDRATE_LOOKUP_FLAGS.keys():
+            # If the baudrate is not in the valid list, raise a ValueError listing the
+            # numeric baudrates (not the termios constants, which differ on Linux):
+            raise ValueError(
+                f"Invalid baudrate: {baudrate}. "
+                f"Valid baudrates are: {list(BAUDRATE_LOOKUP_FLAGS)}"
+            )
+
         self._baudrate = baudrate
 
         # Get the raw TTY termios attributes for the file descriptor:
