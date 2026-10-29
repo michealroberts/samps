@@ -130,6 +130,15 @@ class TestHexToInt(unittest.TestCase):
         with self.assertRaises(TypeError):
             hex_to_int(None)  # type: ignore[arg-type]
 
+    def test_type_validation_rejects_bool_bytes(self) -> None:
+        """
+        Tuples containing bool bytes must raise TypeError.
+        """
+        with self.assertRaises(TypeError):
+            hex_to_int((True, 0, 0))
+        with self.assertRaises(TypeError):
+            hex_to_int((0, False, 0))
+
     def test_range_validation(self) -> None:
         """
         Tuples with values outside 0..255 must raise ValueError.
