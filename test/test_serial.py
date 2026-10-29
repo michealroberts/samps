@@ -5,16 +5,18 @@
 
 # **************************************************************************************
 
+import asyncio
 import os
 import termios
 import time
 import unittest
 import unittest.mock
 from errno import EINVAL
-from typing import cast
+from typing import Any, cast
 
 from samps import (
     BAUDRATES,
+    BaseInterface,
     BaudrateType,
     SerialCommonInterface,
     SerialReadError,
@@ -81,6 +83,25 @@ class TestSerialCommonInterface(unittest.TestCase):
         ) as serial_context:
             self.assertTrue(serial_context.is_open())
         self.assertFalse(serial_context.is_open())
+
+    def test_is_base_interface(self) -> None:
+        """
+        Test that SerialCommonInterface satisfies the BaseInterface protocol:
+        """
+        self.assertIsInstance(self.serial, BaseInterface)
+
+    def test_async_context_manager_is_not_supported(self) -> None:
+        """
+        Test that the synchronous interface cannot be used as an async context manager:
+        """
+
+        async def run() -> None:
+            async with cast(Any, self.serial):
+                pass
+
+        # Python 3.10 raises AttributeError, whereas Python 3.11+ raises TypeError:
+        with self.assertRaises((AttributeError, TypeError)):
+            asyncio.run(run())
 
     def test_is_open_and_is_closed(self) -> None:
         """
