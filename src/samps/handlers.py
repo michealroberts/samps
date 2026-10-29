@@ -30,6 +30,9 @@ class ReadTimeoutHandler:
         """
         self._timeout = timeout
 
+        # The start time is unset until start() is called:
+        self._start: Optional[float] = None
+
     def start(self) -> None:
         """
         Restart the timeout countdown from the current moment.
