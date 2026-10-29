@@ -183,7 +183,7 @@ class SerialAsyncCommonInterface:
         Raises:
             RuntimeError: If the file descriptor is not available.
         """
-        if not self._fd:
+        if self._fd is None:
             raise RuntimeError("File descriptor is not available.")
 
         # Get the current TTY attributes for the file descriptor:
@@ -213,7 +213,7 @@ class SerialAsyncCommonInterface:
             RuntimeError: If the file descriptor is not available.
             ValueError: If bytesize, stopbits, or parity parameters are invalid.
         """
-        if not self._fd:
+        if self._fd is None:
             raise RuntimeError("File descriptor is not available.")
 
         # Enable local mode and receiver:
