@@ -12,7 +12,6 @@ from fcntl import ioctl
 from os import isatty
 from struct import pack, unpack
 from termios import (
-    B9600,
     CLOCAL,
     CREAD,
     CRTSCTS,
@@ -303,9 +302,9 @@ class SerialCommonInterface(BaseInterface):
 
         # Set baud rates from BAUDRATES map:
         try:
-            baudrate = BAUDRATE_LOOKUP_FLAGS.get(self._baudrate, B9600)
-        except KeyError:
-            raise ValueError(f"Unsupported baudrate: {self._baudrate!r}")
+            baudrate = BAUDRATE_LOOKUP_FLAGS[self._baudrate]
+        except KeyError as e:
+            raise ValueError(f"Unsupported baudrate: {self._baudrate!r}") from e
 
         # Configure input and output baud rates:
         attributes["ispeed"] = baudrate
