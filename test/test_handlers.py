@@ -49,6 +49,25 @@ class TestReadTimeoutHandler(unittest.TestCase):
         handler.start()
         self.assertFalse(handler.has_expired())
 
+    def test_has_expired_before_start_raises(self):
+        handler = ReadTimeoutHandler(100.0)
+        with self.assertRaisesRegex(RuntimeError, "Timeout not started"):
+            handler.has_expired()
+
+    def test_remaining_before_start_raises(self):
+        handler = ReadTimeoutHandler(100.0)
+        with self.assertRaisesRegex(RuntimeError, "Timeout not started"):
+            handler.remaining()
+
+    def test_repr_before_start(self):
+        handler = ReadTimeoutHandler(100.0)
+        self.assertIn("remaining=NotStarted", repr(handler))
+
+    def test_no_timeout_before_start(self):
+        handler = ReadTimeoutHandler(None)
+        self.assertFalse(handler.has_expired())
+        self.assertIsNone(handler.remaining())
+
 
 # **************************************************************************************
 
