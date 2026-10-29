@@ -13,6 +13,9 @@ if name == "nt":
         "The samps package is not supported on Windows yet. "
         "Please use a different operating system."
     )
+else:
+    # Otherwise, remove os.name so it does not leak into the samps namespace:
+    del name
 
 # **************************************************************************************
 
