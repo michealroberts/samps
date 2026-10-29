@@ -112,8 +112,13 @@ class USBTMCCommonInterface:
         # Finally, set the USBTMC device to open:
         self._is_open = True
 
-        # Set the timeout directly on the USB TMC device:
-        self.set_timeout(timeout=self._timeout)
+        try:
+            # Set the timeout directly on the USB TMC device:
+            self.set_timeout(timeout=self._timeout)
+        except Exception:
+            # Release the file descriptor and mark the device closed, then re-raise:
+            self.close()
+            raise
 
     def close(self) -> None:
         """
