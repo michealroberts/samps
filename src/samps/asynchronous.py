@@ -380,11 +380,9 @@ class SerialAsyncCommonInterface:
                     continue
                 raise SerialReadError(f"Reading from serial port failed: {e}")
 
-            # If the port was ready but returned no data, treat it as a disconnection.
+            # Keep waiting for more bytes and do NOT treat as a disconnect:
             if not chunk:
-                raise SerialReadError(
-                    "The device reported readiness to read but returned no data."
-                )
+                continue
 
             # If the chunk read was successful, append it to the data:
             read.extend(chunk)
@@ -447,11 +445,9 @@ class SerialAsyncCommonInterface:
                     continue
                 raise SerialReadError(f"Reading from serial port failed: {e}")
 
-            # If the port was ready but returned no data, treat it as a disconnection.
+            # Keep waiting for more bytes and do NOT treat as a disconnect:
             if not chunk:
-                raise SerialReadError(
-                    "The device reported readiness to read but returned no data."
-                )
+                continue
 
             # If the chunk read was successful, process it by checking if the end-of-line
             # marker is within this chunk
