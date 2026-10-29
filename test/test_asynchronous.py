@@ -398,6 +398,25 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         # The input and output speeds of the port must not have been reconfigured:
         self.assertEqual(after[4:6], before[4:6])
 
+    async def test_configure_tty_settings_rejects_unsupported_baudrate(self) -> None:
+        """
+        Test that _configure_tty_settings raises ValueError for an unsupported baudrate
+        rather than silently falling back to 9600:
+        """
+        # Move off 9600 so that a silent fallback would change the port speeds:
+        self.serial.set_baudrate(19200)
+
+        before = termios.tcgetattr(self.slave_file_descriptor)
+
+        self.serial._baudrate = cast(BaudrateType, 12345)
+
+        with self.assertRaises(ValueError):
+            self.serial._configure_tty_settings(self.serial._get_termios_attributes())
+
+        after = termios.tcgetattr(self.slave_file_descriptor)
+        # The input and output speeds of the port must not have been reconfigured:
+        self.assertEqual(after[4:6], before[4:6])
+
     async def test_set_port_updates_property(self) -> None:
         """
         Test that set_port changes the port property and reapplies settings:
