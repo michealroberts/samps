@@ -114,6 +114,37 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         read_back = await self.serial.read(len(data))
         self.assertEqual(read_back, data)
 
+    async def test_readline_retains_bytes_after_eol(self) -> None:
+        """
+        Test that bytes after the eol marker are retained for the next readline:
+        """
+        os.write(self.master_file_descriptor, b"first\nsecond\n")
+
+        self.assertEqual(await self.serial.readline(), b"first\n")
+        self.assertEqual(await self.serial.readline(), b"second\n")
+
+    async def test_read_returns_bytes_retained_by_readline(self) -> None:
+        """
+        Test that read returns bytes retained after the eol marker by readline:
+        """
+        os.write(self.master_file_descriptor, b"line\nXY")
+
+        self.assertEqual(await self.serial.readline(), b"line\n")
+        self.assertEqual(await self.serial.read(2), b"XY")
+
+    async def test_close_discards_bytes_retained_by_readline(self) -> None:
+        """
+        Test that close discards bytes retained after the eol marker by readline:
+        """
+        os.write(self.master_file_descriptor, b"first\nsecond\n")
+
+        self.assertEqual(await self.serial.readline(), b"first\n")
+        await self.serial.close()
+        await self.serial.open()
+
+        with self.assertRaises(SerialReadError):
+            await self.serial.readline()
+
     async def test_read_zero_length(self) -> None:
         """
         Test that reading zero bytes returns an empty bytes object:
