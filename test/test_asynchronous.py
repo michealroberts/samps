@@ -5,8 +5,10 @@
 
 # **************************************************************************************
 
+import asyncio
 import os
 import termios
+import threading
 import time
 import unittest
 import unittest.mock
@@ -177,6 +179,9 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         """
         Test that read keeps waiting for data when the port returns no bytes:
         """
+        # Make the port readable, so the wait after the empty read returns at once:
+        os.write(self.master_file_descriptor, b"x")
+
         with unittest.mock.patch("os.read", side_effect=[b"", b"x"]):
             self.assertEqual(await self.serial.read(1), b"x")
 
@@ -184,8 +189,69 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         """
         Test that readline keeps waiting for data when the port returns no bytes:
         """
+        # Make the port readable, so the wait after the empty read returns at once:
+        os.write(self.master_file_descriptor, b"hello\n")
+
         with unittest.mock.patch("os.read", side_effect=[b"", b"hello\n"]):
             self.assertEqual(await self.serial.readline(), b"hello\n")
+
+    async def test_read_does_not_block_event_loop(self) -> None:
+        """
+        Test that read waits for data without blocking the event loop:
+        """
+
+        async def write_later() -> None:
+            await asyncio.sleep(0.1)
+            os.write(self.master_file_descriptor, b"x")
+
+        data, _ = await asyncio.gather(self.serial.read(1), write_later())
+        self.assertEqual(data, b"x")
+
+    async def test_readline_does_not_block_event_loop(self) -> None:
+        """
+        Test that readline waits for data without blocking the event loop:
+        """
+
+        async def write_later() -> None:
+            await asyncio.sleep(0.1)
+            os.write(self.master_file_descriptor, b"hello\n")
+
+        line, _ = await asyncio.gather(self.serial.readline(), write_later())
+        self.assertEqual(line, b"hello\n")
+
+    async def test_write_does_not_block_event_loop(self) -> None:
+        """
+        Test that write waits for the port to drain without blocking the event loop:
+        """
+        data = b"x" * 65536
+        received = bytearray()
+        ticks = 0
+
+        # Drain the master side slowly, so that the slave side fills up and blocks:
+        def drain() -> None:
+            while len(received) < len(data):
+                received.extend(os.read(self.master_file_descriptor, 1024))
+                time.sleep(0.001)
+
+        # Count how often the event loop gets to run other tasks during the write:
+        async def tick() -> None:
+            nonlocal ticks
+            while True:
+                ticks += 1
+                await asyncio.sleep(0)
+
+        thread = threading.Thread(target=drain, daemon=True)
+        thread.start()
+        ticker = asyncio.create_task(tick())
+
+        try:
+            self.assertEqual(await self.serial.write(data), len(data))
+        finally:
+            ticker.cancel()
+            thread.join(timeout=5)
+
+        self.assertGreater(ticks, 0)
+        self.assertEqual(bytes(received), data)
 
     async def test_constructor_without_params_uses_defaults(self) -> None:
         """

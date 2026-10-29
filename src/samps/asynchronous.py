@@ -64,6 +64,17 @@ from .handlers import ReadTimeoutHandler
 # **************************************************************************************
 
 
+def _resolve(future: "asyncio.Future[None]") -> None:
+    """
+    Resolve the future, unless it has already been resolved or cancelled.
+    """
+    if not future.done():
+        future.set_result(None)
+
+
+# **************************************************************************************
+
+
 class SerialAsyncCommonInterface:
     """
     This class provides a common interface for serial communication.
@@ -285,6 +296,53 @@ class SerialAsyncCommonInterface:
             tty_attributes,
         )
 
+    async def _wait_until_readable(self, timer: ReadTimeoutHandler) -> None:
+        """
+        Wait, without blocking the event loop, until the serial port has data to read
+        or the read timeout expires.
+
+        Args:
+            timer: The ReadTimeoutHandler tracking the overall read timeout.
+        """
+        if self._fd is None:
+            raise RuntimeError("File descriptor is not available.")
+
+        # Convert the remaining time from milliseconds to seconds, as required by
+        # asyncio.wait_for (None waits indefinitely):
+        remaining = timer.remaining()
+        timeout = None if remaining is None else remaining / 1000
+
+        ready: asyncio.Future[None] = self._loop.create_future()
+
+        # Resolve the future as soon as the file descriptor becomes readable:
+        self._loop.add_reader(self._fd, _resolve, ready)
+
+        try:
+            await asyncio.wait_for(ready, timeout)
+        except asyncio.TimeoutError:
+            # The caller checks whether the overall read timeout has expired:
+            pass
+        finally:
+            self._loop.remove_reader(self._fd)
+
+    async def _wait_until_writable(self) -> None:
+        """
+        Wait, without blocking the event loop, until the serial port can accept more
+        data to write.
+        """
+        if self._fd is None:
+            raise RuntimeError("File descriptor is not available.")
+
+        ready: asyncio.Future[None] = self._loop.create_future()
+
+        # Resolve the future as soon as the file descriptor becomes writable:
+        self._loop.add_writer(self._fd, _resolve, ready)
+
+        try:
+            await ready
+        finally:
+            self._loop.remove_writer(self._fd)
+
     async def open(self) -> None:
         """
         Open the serial port, configure termios settings, and enable blocking reads.
@@ -377,11 +435,15 @@ class SerialAsyncCommonInterface:
                     EWOULDBLOCK,
                     EINTR,
                 ):
+                    # Wait until the port has data, without blocking the event loop:
+                    await self._wait_until_readable(timer)
                     continue
                 raise SerialReadError(f"Reading from serial port failed: {e}")
 
-            # Keep waiting for more bytes and do NOT treat as a disconnect:
+            # Keep waiting for more bytes and do NOT treat as a disconnect, without
+            # blocking the event loop:
             if not chunk:
+                await self._wait_until_readable(timer)
                 continue
 
             # If the chunk read was successful, append it to the data:
@@ -442,11 +504,15 @@ class SerialAsyncCommonInterface:
                     EWOULDBLOCK,
                     EINTR,
                 ):
+                    # Wait until the port has data, without blocking the event loop:
+                    await self._wait_until_readable(timer)
                     continue
                 raise SerialReadError(f"Reading from serial port failed: {e}")
 
-            # Keep waiting for more bytes and do NOT treat as a disconnect:
+            # Keep waiting for more bytes and do NOT treat as a disconnect, without
+            # blocking the event loop:
             if not chunk:
+                await self._wait_until_readable(timer)
                 continue
 
             # If the chunk read was successful, process it by checking if the end-of-line
@@ -492,8 +558,10 @@ class SerialAsyncCommonInterface:
             try:
                 n = os.write(self._fd, data[written:])
             except OSError as e:
-                # Retry on transient POSIX errors:
+                # Retry on transient POSIX errors, once the port can accept more data,
+                # without blocking the event loop:
                 if e.errno in (EAGAIN, EWOULDBLOCK, EINTR):
+                    await self._wait_until_writable()
                     continue
                 raise SerialWriteError(f"Writing to serial port failed: {e}") from e
 
