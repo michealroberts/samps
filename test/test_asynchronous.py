@@ -488,6 +488,22 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         await self.serial.close()
         await self.serial.close()
 
+    async def test_get_termios_attributes_accepts_fd_zero(self) -> None:
+        """
+        Test that _get_termios_attributes treats file descriptor 0 as available:
+        """
+        fd = self.serial._fd
+        self.serial._fd = 0
+        try:
+            with unittest.mock.patch(
+                "samps.asynchronous.tcgetattr",
+                return_value=[0, 0, 0, 0, 0, 0, [b"\x00"] * 32],
+            ):
+                termios_attributes = self.serial._get_termios_attributes()
+        finally:
+            self.serial._fd = fd
+        self.assertEqual(len(termios_attributes["control_chars"]), 32)
+
 
 # **************************************************************************************
 
