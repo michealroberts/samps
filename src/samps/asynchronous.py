@@ -62,6 +62,7 @@ from termios import (
 from types import TracebackType
 from typing import Literal, Optional, Type
 
+from .base import BaseAsyncInterface
 from .baudrate import BAUDRATE_LOOKUP_FLAGS, BaudrateType
 from .common import (
     DEFAULT_TIMEOUT,
@@ -87,7 +88,7 @@ def _resolve(future: "asyncio.Future[None]") -> None:
 # **************************************************************************************
 
 
-class SerialAsyncCommonInterface:
+class SerialAsyncCommonInterface(BaseAsyncInterface):
     """
     This class provides a common interface for serial communication.
     """

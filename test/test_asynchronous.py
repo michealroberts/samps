@@ -18,6 +18,7 @@ from typing import cast
 
 from samps import (
     BAUDRATE_LOOKUP_FLAGS,
+    BaseAsyncInterface,
     BaudrateType,
     SerialReadError,
     SerialWriteError,
@@ -81,6 +82,15 @@ class TestSerialAsyncCommonInterface(unittest.IsolatedAsyncioTestCase):
         ) as serial_context:
             self.assertTrue(serial_context.is_open())
         self.assertFalse(serial_context.is_open())
+
+    async def test_is_base_async_interface(self) -> None:
+        """
+        Test that SerialAsyncCommonInterface explicitly subclasses the BaseAsyncInterface
+        protocol:
+        """
+        self.assertIn(BaseAsyncInterface, SerialCommonInterface.__mro__)
+        self.assertTrue(issubclass(SerialCommonInterface, BaseAsyncInterface))
+        self.assertIsInstance(self.serial, BaseAsyncInterface)
 
     async def test_is_open_and_is_closed(self) -> None:
         """
